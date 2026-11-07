@@ -77,7 +77,51 @@ try {
   await page.evaluate(() => { S.rooms[0].floor = '5.45'; save(); render(); });
   const g2 = await page.evaluate(() => geo(S.rooms[0]));
   ok('ручная площадь пола', g2.floor === 5.45 && g2.walls === 42.06, JSON.stringify(g2));
-  await page.evaluate(() => { S.rooms[0].floor = ''; (S.rooms[0].works||[]).forEach(w => { if (w.auto) w.qty = geo(S.rooms[0])[w.base]; }); save(); render(); });
+  await page.evaluate(() => { S.rooms[0].floor = ''; save(); render(); });
+  const sticky = await page.evaluate(() => {
+    const w = S.rooms[0].works.find(x => x.name.includes('обоев'));
+    const before = w.qty;
+    setR(0, 'L', '4');
+    const stayed = S.rooms[0].works.find(x => x.name.includes('обоев')).qty;
+    const walls = geo(S.rooms[0]).walls;
+    recalcLine(0, S.rooms[0].works.findIndex(x => x.name.includes('обоев')), '', true);
+    const rec = S.rooms[0].works.find(x => x.name.includes('обоев')).qty;
+    recalcLine(0, S.rooms[0].works.findIndex(x => x.name.includes('обоев')), '=S', false);
+    const form = S.rooms[0].works.find(x => x.name.includes('обоев')).qty;
+    const floor = geo(S.rooms[0]).floor;
+    setR(0, 'L', '3.43');
+    recalcLine(0, S.rooms[0].works.findIndex(x => x.name.includes('обоев')), '', true);
+    return { before, stayed, walls, rec, form, floor };
+  });
+  ok('объём не меняется при смене длины', sticky.before === sticky.stayed && sticky.walls !== sticky.before, JSON.stringify(sticky));
+  ok('Shift+Enter пересчитывает строку', sticky.rec === sticky.walls, JSON.stringify(sticky));
+  ok('формула =S', sticky.form === sticky.floor, JSON.stringify(sticky));
+  const wet = await page.evaluate(() => {
+    addRoom('Ванная');
+    const ri = S.rooms.length - 1;
+    const ci = CAT.findIndex(c => c[2] === 'Грунтовка пола (за 1 слой)');
+    const dry = catP(ci, 'Комната');
+    tick(ri, ci, -1, true);
+    const bath = S.rooms[ri].works[0].price;
+    const sci = CAT.findIndex(c => c[2] === 'Устройство самонивелирующей стяжки до 10 мм');
+    const screed = catP(sci, 'Ванная');
+    const balcony = catP(sci, 'Балкон');
+    S.rooms.splice(ri, 1); S.tab = 0; save(); render();
+    return { dry, bath, screed, balcony };
+  });
+  ok('грунтовка пола в ванной 99', wet.dry === 79 && wet.bath === 99, JSON.stringify(wet));
+  ok('стяжка 2376 только для ванной', wet.screed === 2376 && wet.balcony === 1901, JSON.stringify(wet));
+  const see = await page.evaluate(() => {
+    S.tab = 0; S.seeOnly = true; render();
+    const leaked = [...document.querySelectorAll('.wr')].some(el => el.style.display !== 'none' && !el.classList.contains('on'));
+    const shown = [...document.querySelectorAll('.wr')].filter(el => el.style.display !== 'none').length;
+    S.seeOnly = false; render();
+    return { leaked, shown, order: SECTIONS.indexOf('Сантехнические работы') < SECTIONS.indexOf('Финишная отделка полов') };
+  });
+  ok('фильтр См. прячет неотмеченное', see.shown > 0 && !see.leaked, JSON.stringify(see));
+  ok('порядок разделов как в печати', see.order);
+  const keys = await page.evaluate(() => ({ v1: localStorage.getItem('smeta_v1'), v2: localStorage.getItem('smeta_v2') ? 1 : 0, oldPrice: localStorage.getItem('smeta_price') }));
+  ok('старый ключ хранения не перезаписывается', keys.v1 === null && keys.v2 === 1 && keys.oldPrice === null, JSON.stringify(keys));
 
   await page.click('#assist-text');
   await page.type('#assist-text', 'Кухня 12 м2, снять обои, шпаклевать стены 35 м2 и покрасить в 2 слоя, уложить ламинат');

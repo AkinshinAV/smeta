@@ -178,9 +178,59 @@
     return String(s ?? '').replace(/[\u0000-\u001f{}\\"'<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
   }
 
+  function normName(s) {
+    return String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
+  }
+
+  /** Тип помещения только для двух цен, которые есть в observed_in_pdf сметы 10168180. */
+  function roomKind(name) {
+    const n = normName(name);
+    if (/ванн|сануз/.test(n)) return 'bath';
+    if (/балкон|лоджи/.test(n)) return 'balcony';
+    return 'dry';
+  }
+
+  function priceForRoom(workName, roomName, basePrice) {
+    const n = normName(workName).replace(/\s+/g, '');
+    const kind = roomKind(roomName);
+    if (n === 'грунтовкапола(за1слой)' && (kind === 'bath' || kind === 'balcony')) return 99;
+    if (n === 'устройствосамонивелирующейстяжкидо10мм' && kind === 'bath') return 2376;
+    return basePrice;
+  }
+
+  function qtyContext(room) {
+    const g = geo(room || {});
+    return {
+      L: Math.max(0, num(room && room.L)),
+      B: Math.max(0, num(room && room.W)),
+      H: Math.max(0, num(room && room.H)),
+      S: g.floor, P: g.perim, W: g.walls, X: g.open, O: g.slopes
+    };
+  }
+
+  /** Формула количества: =S, =P-1.6, =L*B, =H*4. Другие имена и вызовы запрещены. */
+  function evalQtyFormula(expr, ctx) {
+    const raw = String(expr ?? '').trim();
+    if (!raw.startsWith('=')) return { ok: false, reason: 'Формула начинается со знака =' };
+    const s = raw.slice(1).replace(/,/g, '.').replace(/\s+/g, '');
+    if (!s) return { ok: false, reason: 'Пустая формула' };
+    if (!/^(?:[LBHSWPXO]|\d+(?:\.\d+)?|[+\-*/().])+$/.test(s)) {
+      return { ok: false, reason: 'В формуле можно использовать L, B, H, S, P, W, X, O и + − * /' };
+    }
+    try {
+      const n = Function('L', 'B', 'H', 'S', 'P', 'W', 'X', 'O', '"use strict"; return (' + s + ')')(
+        num(ctx.L), num(ctx.B), num(ctx.H), num(ctx.S), num(ctx.P), num(ctx.W), num(ctx.X), num(ctx.O)
+      );
+      if (!Number.isFinite(n) || n < 0 || n > 100000) return { ok: false, reason: 'Результат формулы не подходит' };
+      return { ok: true, n: Math.round(n * 100) / 100 };
+    } catch (e) {
+      return { ok: false, reason: 'Формула не считается' };
+    }
+  }
+
   return {
     SPEC_DEF, num, parseUserNum, r2, fl, geo, lineSum, roomTot, discOf, roomFin, objFin, objBase,
     money, sp, numStr, vatParts, vatValue, kopStrFromAmount, fmtVat, rkVat, plural, words,
-    rubWords, rubWordsKop, prepay, refund, cssSafe
+    rubWords, rubWordsKop, prepay, refund, cssSafe, normName, roomKind, priceForRoom, qtyContext, evalQtyFormula
   };
 });
