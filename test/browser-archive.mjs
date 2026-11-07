@@ -133,6 +133,41 @@ try {
   const dog = await page.evaluate(() => ({ n: window.__printed, has: document.getElementById('print').innerText.includes('ДОГОВОР'), banner: document.getElementById('print').innerText.includes('Тестовая версия') }));
   ok('договор preview печатается и без тестовой полосы', dog.n === 1 && dog.has && !dog.banner, JSON.stringify(dog));
 
+  async function guardLibrary(url, key) {
+    const secret = JSON.stringify({ items: 'broken', valuableData: 'SECRET-' + key });
+    const second = JSON.stringify({ items: null, valuableData: 'SECOND-' + key });
+    const third = JSON.stringify({ items: [{ id: 'x', estimate: { rooms: 'нет' } }], valuableData: 'THIRD-' + key });
+    await page.goto(url, { waitUntil: 'networkidle0' });
+    await page.evaluate((k, raw) => { localStorage.clear(); localStorage.setItem(k, raw); }, key, secret);
+    await page.reload({ waitUntil: 'networkidle0' });
+    const first = await page.evaluate(k => ({ damaged: localStorage.getItem(k + '_damaged'), current: localStorage.getItem(k) }), key);
+    const kept = first.damaged === secret && first.current !== secret && !String(first.current).includes('SECRET');
+    await page.evaluate((k, raw) => {
+      localStorage.setItem(k + '_damaged', 'KEEP-' + k);
+      localStorage.setItem(k, raw);
+    }, key, second);
+    await page.reload({ waitUntil: 'networkidle0' });
+    const next = await page.evaluate(k => ({ keep: localStorage.getItem(k + '_damaged'), alt: localStorage.getItem(k + '_damaged_2') }), key);
+    const rotated = next.keep === 'KEEP-' + key && next.alt === second;
+    await page.evaluate((k, raw) => {
+      for (let i = 1; i <= 20; i++) localStorage.setItem(k + '_damaged' + (i === 1 ? '' : '_' + i), 'OTHER-' + i);
+      localStorage.setItem(k, raw);
+    }, key, third);
+    await page.reload({ waitUntil: 'networkidle0' });
+    const stopped = await page.evaluate((k, raw) => {
+      const same = [];
+      for (let i = 1; i <= 20; i++) same.push(localStorage.getItem(k + '_damaged' + (i === 1 ? '' : '_' + i)) === 'OTHER-' + i);
+      const before = localStorage.getItem(k);
+      save();
+      showLib();
+      return { unchanged: before === raw && localStorage.getItem(k) === raw, copies: same.every(Boolean), readOnly: saveState.readOnly, held: saveState.heldRaw === raw, button: !!document.querySelector('button[onclick="downloadHeld()"]') };
+    }, key, third);
+    return kept && rotated && stopped.unchanged && stopped.copies && stopped.readOnly && stopped.held && stopped.button;
+    return kept && rotated && stopped.unchanged && stopped.copies && stopped.readOnly;
+  }
+  ok('корень не затирает битую библиотеку', await guardLibrary(`http://127.0.0.1:${port}/index.html`, 'smeta_v1_library'));
+  ok('preview не затирает битую библиотеку', await guardLibrary(`http://127.0.0.1:${port}/preview-v2/index.html`, 'smeta_v2_library'));
+
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'networkidle0' });
   const rootPrice = await page.evaluate(() => catP(CAT.findIndex(c => c[2] === 'Грунтовка пола (за 1 слой)')));
   ok('корень не получил цену ванной из preview', rootPrice === 79, String(rootPrice));

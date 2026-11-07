@@ -25,7 +25,48 @@
   }
 
   function isLibrary(v) {
-    return !!(v && typeof v === 'object' && !Array.isArray(v) && Array.isArray(v.items));
+    return assessLibrary(v, validEstimate).state === 'ok';
+  }
+
+  function validItem(item, check) {
+    try {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+      if (typeof item.id !== 'string' || !item.id || item.id.length > 80) return false;
+      if (/[<>"'\\\s]/.test(item.id)) return false;
+      if (item.archived != null && typeof item.archived !== 'boolean') return false;
+      return check(item.estimate);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function assessLibrary(value, check) {
+    try {
+      if (value == null) return { state: 'empty' };
+      if (typeof value !== 'object' || Array.isArray(value)) return { state: 'invalid' };
+      if (!Array.isArray(value.items)) return { state: 'invalid' };
+      const good = [];
+      let bad = 0;
+      for (const item of value.items) {
+        if (validItem(item, check)) good.push(item);
+        else bad++;
+      }
+      if (bad === 0) return { state: 'ok', items: good, activeId: typeof value.activeId === 'string' ? value.activeId : '' };
+      return { state: 'partial', items: good, bad };
+    } catch (e) {
+      return { state: 'invalid' };
+    }
+  }
+
+  function reserveDamaged(raw, slots) {
+    const list = Array.isArray(slots) && slots.length ? slots : [{ key: null, raw: null }];
+    for (const s of list) {
+      if (s && s.raw === raw) return { already: true, key: s.key };
+    }
+    for (const s of list) {
+      if (s && (s.raw == null || s.raw === '')) return { key: s.key, primary: !s.key };
+    }
+    return { blocked: true };
   }
 
   function makeItem(estimate, id, now) {
@@ -46,14 +87,36 @@
     if (opts.priceBackupRaw == null && opts.priceRaw != null) writes.push({ slot: 'priceBackup', value: opts.priceRaw });
     if (opts.coBackupRaw == null && opts.coRaw != null) writes.push({ slot: 'coBackup', value: opts.coRaw });
 
-    let lib = null;
+    const rawNonEmpty = opts.libRaw != null && opts.libRaw !== '';
     const parsedLib = safeParse(opts.libRaw);
-    if (parsedLib.ok && isLibrary(parsedLib.value)) lib = parsedLib.value;
-    else if (parsedLib.corrupt) {
-      warnings.push('Список объектов повреждён. Исходная запись не стёрта, сделана отдельная копия.');
-      writes.push({ slot: 'libDamaged', value: opts.libRaw });
+    const assessment = !rawNonEmpty ? { state: 'empty' } : (parsedLib.ok ? assessLibrary(parsedLib.value, check) : { state: 'invalid' });
+    const usable = assessment.state === 'ok';
+    let heldRaw = null;
+    let blocked = false;
+    if (rawNonEmpty && !usable) {
+      heldRaw = opts.libRaw;
+      const reserved = reserveDamaged(opts.libRaw, opts.damagedSlots);
+      if (reserved.blocked) {
+        blocked = true;
+        warnings.push('Повреждённый список некуда скопировать: прежние копии заняты другими данными и не перезаписаны. Исходная запись оставлена без изменений. Скачайте её. Новые правки не записываются поверх неё.');
+      } else if (!reserved.already) {
+        const entry = { slot: 'libDamaged', value: opts.libRaw };
+        if (reserved.key) entry.key = reserved.key;
+        writes.push(entry);
+        warnings.push(assessment.state === 'partial'
+          ? 'В списке были неподходящие объекты. Полная запись сохранена отдельно, в работу взяты только целые сметы.'
+          : 'Список объектов повреждён. Полная запись сохранена отдельно, исходные байты не затёрты без копии.');
+      } else {
+        warnings.push('Такая повреждённая запись уже сохранена отдельной копией и не перезаписывалась.');
+      }
     }
 
+    let lib = null;
+    if (usable) {
+      lib = { v: 1, activeId: assessment.activeId || '', items: assessment.items.map(clone) };
+    } else if (!blocked && assessment.state === 'partial' && assessment.items.length) {
+      lib = { v: 1, activeId: '', items: assessment.items.map(clone) };
+    }
     if (!lib) {
       lib = { v: 1, activeId: '', items: [] };
       const leg = safeParse(opts.legacyRaw);
@@ -76,20 +139,21 @@
         lib.items.push(item);
         lib.activeId = item.id;
       }
-      writes.push({ slot: 'library', value: lib });
     }
+    if (!usable && !blocked) writes.push({ slot: 'library', value: lib });
+    if (blocked) return { lib, writes, warnings, blocked: true, heldRaw };
 
     if (!lib.activeId || !lib.items.some(i => i.id === lib.activeId)) {
       const live = lib.items.find(i => !i.archived) || lib.items[0];
       lib.activeId = live ? live.id : '';
     }
-    return { lib, writes, warnings };
+    return { lib, writes, warnings, blocked: false, heldRaw };
   }
 
   function applyWrites(storage, slots, writes) {
     const done = [];
     for (const w of writes) {
-      const key = slots[w.slot];
+      const key = w.key || slots[w.slot];
       if (!key) return { ok: false, message: 'Не сохранилось: внутренняя ошибка ключа.', done };
       const val = typeof w.value === 'string' ? w.value : JSON.stringify(w.value);
       try {
@@ -213,7 +277,7 @@
   }
 
   return {
-    safeParse, validEstimate, isLibrary, makeItem, planLoad, applyWrites, activeItem, capture,
+    safeParse, validEstimate, validItem, assessLibrary, isLibrary, reserveDamaged, makeItem, planLoad, applyWrites, activeItem, capture,
     activate, addItem, duplicateItem, archiveItem, restoreItem, classifyImport, applyImport, queryItems, clone
   };
 });
