@@ -1,0 +1,11 @@
+{
+  "name": "smeta",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/calc.test.js test/assist.test.js",
+    "test:browser": "node test/browser.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.15.0"
+  }
+}
