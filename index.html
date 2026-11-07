@@ -74,11 +74,11 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 @media print{header,.topbar,.tabs,.dimstrip,main{display:none!important}#print{display:block!important}body{background:#fff;margin:0}}
 #print{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact;font-family:Jost,"Futura PT",Futura,"Century Gothic",Arial,sans-serif;color:#000;font-size:6.7pt}
 .pp{break-after:page;page-break-after:always}.pp:last-child{break-after:auto;page-break-after:auto}
-.sh{display:flex;justify-content:space-between;align-items:flex-start;margin:0 0 4px}
-.logoimg{height:46pt;width:auto;display:block}
+.sh{display:flex;justify-content:space-between;align-items:flex-start;margin:0 0 4px;gap:10pt}
+.logoimg{height:50pt;width:auto;display:block}
 .hb{border-collapse:collapse;font-size:6.6pt;margin-left:auto}
-.hb td{border:.6pt solid #000;padding:0 4pt;height:9pt;vertical-align:middle;white-space:nowrap}
-.hb .lab{text-align:right;width:78pt}.hb .c{text-align:center;min-width:64pt}.hb .mid{text-align:left;width:52pt}.hb .val{text-align:right;min-width:82pt}
+.hb td{border:.6pt solid #000;padding:0 3pt;height:9pt;vertical-align:middle;white-space:nowrap}
+.hb{max-width:100%}.hb .lab{text-align:right;width:72pt}.hb .c{text-align:center;min-width:58pt}.hb .mid{text-align:left;width:52pt}.hb .val{text-align:right;min-width:68pt}
 #print .ital,.ital{font-style:italic;font-weight:700}
 #print .r{text-align:right}
 .ac{width:100%;border-collapse:collapse;font-size:6.6pt;margin:0 0 2pt}
@@ -106,7 +106,7 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 .dg h2,.dtitle{text-align:center;font-size:11.5pt;margin:10pt 0 8pt;font-weight:700}
 .dg h3{font-size:10.7pt;margin:10pt 0 6pt;text-align:center;font-weight:700}
 .dgh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8pt}
-.dgh .logoimg{height:46pt}
+.dgh .logoimg{height:50pt}
 .dg .hot{text-align:right;font-size:11pt;line-height:13pt}
 .dg .cl{display:flex;justify-content:space-between;align-items:center;margin:6pt 0 10pt;flex-wrap:nowrap;gap:8pt}
 .dtitle{display:flex;justify-content:center;align-items:center;gap:6pt;flex-wrap:nowrap;white-space:nowrap}
@@ -132,6 +132,17 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 .prapp .prnotes{font-size:9pt;margin-top:10pt;line-height:12pt;text-align:left}
 .prapp .prnotes p{margin:0 0 4pt;text-align:left}
 .prtitle{font-weight:700;margin:6pt 0 8pt;font-size:11pt}
+.prapp .prt{table-layout:fixed}
+.assist p{margin:6px 0}
+.assist textarea{min-height:90px;resize:vertical;line-height:1.4}
+.aroom{border:1px solid #e4e8ef;border-radius:8px;padding:10px;margin:10px 0}
+.aroom h4{margin:0 0 6px}
+.aprop{display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 8px;padding:8px 0;border-bottom:1px solid #eef1f5}
+.aprop .ed{grid-column:1/-1;padding-left:36px}
+.anote{background:#fff8e6;border:1px solid #f0e0b0;padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px}
+.aerr{background:#fdecea;border:1px solid #f5c2c0;padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px}
+.aok{background:#e8f6ee;border:1px solid #b7e0c2;padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px}
+@media(max-width:700px){.aprop .ed{padding-left:0}}
 </style></head><body>
 <div class="topbar"><h1 id="docTitle">Смета ремонта</h1>
 <button onclick="newObj()" class="sec">Новая смета</button>
@@ -140,6 +151,17 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 <button onclick="doPrint('sm')">Смета / PDF</button><button onclick="doPrint('dog')">Договор</button></div>
 <div class="tabs" id="tabs"></div><div class="dimstrip" id="dims"></div>
 <main>
+<div class="card assist" id="assist">
+<h3 style="margin-top:0">Подбор работ по описанию</h3>
+<p class="muted">Это подбор по каталогу этой сметы, не нейросеть: текст никуда не отправляется. Напишите помещения и работы своими словами. Ниже появятся позиции с количеством и ценой — лишнее можно снять, количество поправить и добавить одним нажатием. Уже набранная смета не стирается.</p>
+<textarea id="assist-text" placeholder="Кухня 12 м2, снять обои, шпаклевать стены 35 м2 и покрасить в 2 слоя, уложить ламинат"></textarea>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+<button type="button" id="assist-run">Подобрать позиции</button>
+<button type="button" class="sec" id="assist-clear">Очистить поле</button>
+<button type="button" class="sec" id="assist-undo" hidden>Отменить добавление</button>
+</div>
+<div id="assist-out"></div>
+</div>
 <div id="panel-obj"><div class="card"><h3 style="margin-top:0">Объект</h3><div class="grid">
 <label>Адрес<input id="o_addr"></label><label>Заказчик<input id="o_client"></label><label>Площадь объекта, м² (если пусто — сумма полов)<input id="o_area" type="text" inputmode="decimal"></label>
 <label>№ сметы<input id="o_num"></label><label>Дата<input id="o_date" type="date"></label><label>Скидка, %<input id="o_disc" type="text" inputmode="decimal"></label></div></div>
@@ -151,6 +173,7 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 <label>№ договора<input data-k="cno"></label><label>Дата договора<input type="date" data-k="cdate"></label><label>Начало работ не позднее<input type="date" data-k="start"></label>
 <label>Помещения (п.1.2; пусто — список комнат)<input data-k="rooms"></label><label>Уполномоченный представитель (п.9.11)<input data-k="rep"></label><label>ID сметы<input data-k="smId"></label>
 <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" data-k="discSpec" style="width:22px;height:22px">Скидка и на спецмонтаж</label>
+<label>Редакция (в сводной и прайсе, пусто — прочерк)<input data-k="rev" placeholder="например М0912"></label>
 <label>Предоплата 5%, ₽ (пусто — округление до тысяч)<input data-k="prepay" inputmode="decimal" placeholder="авто"></label>
 <label>Возврат 3% при отказе, ₽ (пусто — округление до тысяч)<input data-k="refund" inputmode="decimal" placeholder="авто"></label>
 <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" data-k="includePrice" style="width:22px;height:22px">Включать прайс (приложение №2) в договор</label></div></details>
@@ -162,8 +185,10 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 <div class="card" id="addrow"><button onclick="addRoom()">+ Помещение</button> <button class="sec" onclick="addRoom('Электрика',true)">+ Электрика (без размеров)</button></div>
 <div class="card" id="summary"></div>
 <div id="panel-price" style="display:none"></div>
-<p class="muted">Цены в каталоге взяты из образцов смет Remfy (14.10.2026 и 17.10.2026). Позиции без цены нужно заполнить вручную. Данные сохраняются в этом браузере автоматически.</p>
+<p class="muted">Цены в каталоге взяты из образцов смет Remfy (14.10.2026 и 17.10.2026). Позиции без цены нужно заполнить вручную. Данные сохраняются в этом браузере автоматически. Подбор по описанию сравнивает фразу только с этим каталогом.</p>
 </main><div id="print"></div>
+<script src="smeta-calc.js"></script>
+<script src="assist.js"></script>
 <script>
 // [раздел, поверхность, название, ед., цена, база количества]  база: floor|walls|perim|slopes|ceil|manual ; null цена = ввести вручную
 const SP=['Электромонтажные работы','Сантехнические работы'];
@@ -278,27 +303,25 @@ const PRICE_DEF=[{"sn":"1","s":"Демонтажные работы","u":"Сте
 const PRICE_NOTES="<p>Примечание:</p><p>1) минимальная стоимость сметы МКАД 200 000 рублей, за МКАД 200 000 рублей</p><p>2) минимальная стоимость работы по выносу строительного мусора - 2000 рублей</p><p>3) минимальная стоимость работы по подъему материала - 1500 рублей</p><p>4) при установке двери в количестве 1 шт, к цене прибавляется стоимость выезда - 1500 рублей</p><p>5) минимальная стоимость натяжного потолка ПВХ - 10000 рублей, тканевого натяжного потолка - 12000 рублей</p><p>6) минимальная стоимость заказа еврошлифовки - 15000 рублей, включая материал</p><p>7) в работу по демонтажу входит вынос мусора до лестничной площадки клиента</p><p>8) для работ со следующими материалами: обои, ламинат, паркетная доска, плитка, панели (всех видов), ГКЛ, при объеме меньше и включительно 6м2 и 1м2 применяются коэффициенты 1,25 и 1,75 соответственно, при укладке по диагонали применяется коэффициент 1,3</p><p>9) при объеме работ меньше 1м2, либо 1 м/п, объем округляется до единицы</p><p>10) *для данных видов работ, в зависимости от сложности (количества слоев краски, полная очистка поверхности от краски), возможно применение повышающего коэффициента от 1,25 до 2,0</p><p>11) для работ по ремонту балконов и лоджий возможно применение коэффициентов 1,25-2,0</p><p>12) **для данных видов работ, в зависимости от сложности (шкафы-купе, габаритная мебель, люстры, большое количество деталей) возможно применение повышающего коэффициента от 1,25 до 2,5</p><p>13) ***рассчитывается индивидуально, цена указана справочно</p><p>14)****стоимость работы, без учета материала составляет: 600р/м2</p><p>15) для видов работ, связанных с нахождением на высоте свыше 2 метров, возможно применение повышающих коэффициентов от 1,3, до 2,0</p><p>16) цены для некоторых видов работ, при ремонте санузлов, лоджий, балконов, кладовых, могут быть увеличены на коэффициент 1,25</p><p>17) виды работ, не указанные в прейскуранте, расцениваются из расчета 750 руб/час</p><p>18) при работе с дорогостоящими материалами, а именно: Обои свыше 4000 за рулон, ламинат и паркет свыше 2500 за квадратный метр, керамическая плитка, керамогранит свыше 2000 за квадратный метр, возможно применение коэффициентов 1,5-2,0</p><p>19) данная стоимость по выносу мусора рассчитывается при условии наличия контейнера для сбора строительного мусора не далее 30 метров от подъезда или места проведения работ</p><p>20) стоимость установки дверей указана из расчета стоимости комплекта двери до 15тыс.р. При стоимости комплекта двери от 15 до 70тыс.р к сттоимости устаноки применяется коэф. 1,25. При стоимости комплекта двери от 71тыс.р и более к стоимости устаноки применяется коэф. 1,5</p><p>21) Минимальная стоимость специализированных работ (выезд) - 8000р</p><p>22) стандартный монтаж кондиционера включает - установку наружного блока под окно шт - пробивка отвестия ф40 шт - прокладка фреоновой трассы м - прокладка кабель-канала сечением 60х60 м - прокладка кабель-канала сечением 16х16 м - комплектующие и расходный материал ком 5 прокладка кабель-канала сечением 16х16 м 6 комплектующие и расходный материал ком</p><p>**материал включен</p><p>ЦЕНЫ ДЕЙСТВИТЕЛЬНЫ 120 ДНЕЙ С МОМЕНТА ЗАКЛЮЧЕНИЯ ДОГОВОРА</p>";
 const SECTIONS=[...new Set(CAT.map(c=>c[0]))];
 const KEY='smeta_v1';let S;
-const r2=x=>Math.round(x*100)/100,fl=x=>Math.floor(x+1e-9),money=x=>fl(x).toLocaleString('ru-RU')+' р.';
+const r2=SmetaCalc.r2,fl=SmetaCalc.fl,money=SmetaCalc.money,num=SmetaCalc.num,parseUserNum=SmetaCalc.parseUserNum;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PRICE_KEY='smeta_price';
-function num(v){if(v==null||v==='')return 0;if(typeof v==='number')return Number.isFinite(v)?v:0;const n=parseFloat(String(v).trim().replace(/\s/g,'').replace(',','.'));return Number.isFinite(n)?n:0}
-function parseUserNum(v,min,max){const raw=String(v??'').trim();if(raw==='')return{n:0,store:'',bad:false};let s=raw.replace(/\s/g,'').replace(',','.');if(s.endsWith('.'))s=s.slice(0,-1);if(!/^-?\d+(\.\d+)?$/.test(s))return{n:0,store:'0',bad:true};let n=parseFloat(s);if(!Number.isFinite(n))return{n:0,store:'0',bad:true};let bad=false;if(min!=null&&n<min){n=min;bad=true}if(max!=null&&n>max){n=max;bad=true}return{n,store:bad?String(n):raw,bad}}
 function stemRu(w){w=String(w||'').toLowerCase().replace(/ё/g,'е');const suf=['циями','ями','ами','иями','ов','ев','ёв','ей','ой','ий','ый','ая','ое','ые','ие','ью','ем','ом','ам','ям','ах','ях','ую','юю','ы','и','а','я','у','ю','о','е','ь'];for(const s of suf){if(w.length>s.length+2&&w.endsWith(s))return w.slice(0,-s.length)}return w}
 function matchQ(text,q){text=String(text||'').toLowerCase().replace(/ё/g,'е');q=String(q||'').toLowerCase().replace(/ё/g,'е').trim();if(!q)return true;if(text.includes(q))return true;const toks=q.split(/\s+/).filter(Boolean);const words=text.split(/[^а-яa-z0-9]+/i).filter(Boolean);return toks.every(tok=>{const st=stemRu(tok);if(text.includes(tok)||(st.length>=3&&text.includes(st)))return true;return words.some(w=>{const ws=stemRu(w);return ws===st||ws.startsWith(st)||st.startsWith(ws)||w.startsWith(tok)})})}
 function getPrice(){return (Array.isArray(S.price)&&S.price.length)?S.price:PRICE_DEF}
 function normN(s){return String(s||'').toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' ').trim()}
 function findPrice(name,surf,sec){const list=getPrice(),nn=normN(name),sf=normN(surf),sc=normN(sec);let hit=list.find(it=>normN(it.name)===nn&&(!sf||normN(it.u)===sf)&&(!sc||normN(it.s)===sc));if(!hit)hit=list.find(it=>normN(it.name)===nn&&(!sf||normN(it.u)===sf));if(!hit)hit=list.find(it=>normN(it.name)===nn);return hit==null?null:num(hit.p)}
 function catP(ci){const c=CAT[ci];if(!c)return '';if(S.usePriceList){const p=findPrice(c[2],c[1],c[0]);if(p!=null)return p}return c[4]}
-function fmtVat(n){const v=Math.round(n*5/105*100)/100;const r=Math.floor(v),k=String(Math.round((v-r)*100)%100).padStart(2,'0');return r.toLocaleString('ru-RU')+' р. '+k+' коп.'}
+function fmtVat(n){return SmetaCalc.fmtVat(n)}
 function blank(){return{addr:'',client:'',area:'',num:'1',date:new Date().toISOString().slice(0,10),disc:0,rooms:[],usePriceList:false}}
 function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(!S)S=blank();(S.rooms||[]).forEach(r=>{if(!Array.isArray(r.works))r.works=[]});if(!Array.isArray(S.price)){try{const p=JSON.parse(localStorage.getItem(PRICE_KEY)||'null');if(Array.isArray(p)&&p.length)S.price=p}catch(e){}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(S));if(Array.isArray(S.price))localStorage.setItem(PRICE_KEY,JSON.stringify(S.price))}
-function geo(r){if(!r||r.noDims)return{floor:0,walls:0,perim:0,slopes:0,ceil:0,open:0};const L=Math.max(0,num(r.L)),W=Math.max(0,num(r.W)),H=Math.max(0,num(r.H)),op=Math.max(0,num(r.open));const floor=r2(L*W),perim=r2(2*(L+W));return{floor,ceil:floor,perim,walls:r2(Math.max(0,perim*H-op)),slopes:r2(Math.max(0,num(r.slopes))),open:op}}
-function lineSum(w){return Math.round(num(w&&w.price)*num(w&&w.qty))}
-function roomTot(r){let g=0,s=0;(r.works||[]).forEach(w=>{SP.includes(w.sec)?s+=lineSum(w):g+=lineSum(w)});return{g,s,t:g+s}}
-function disc(){return Math.min(20,Math.max(0,num(S.disc)))}
+function geo(r){return SmetaCalc.geo(r)}
+function lineSum(w){return SmetaCalc.lineSum(w)}
+function roomTot(r){return SmetaCalc.roomTot(r,SP)}
+function disc(){return SmetaCalc.discOf(S&&S.disc)}
 function roomWarns(r){const msgs=[];if(!r)return msgs;if(!r.noDims){const L=Math.max(0,num(r.L)),W=Math.max(0,num(r.W)),H=Math.max(0,num(r.H)),op=num(r.open);const gross=2*(L+W)*H;if(op>0&&op>gross)msgs.push('Проёмы больше площади стен — стены обнулены. Проверьте размеры проёмов.');const g=geo(r);const noSize=!num(r.L)&&!num(r.W);if((r.works||[]).some(w=>num(w.qty)===0)&&(noSize||(g.floor===0&&g.walls===0&&g.perim===0)))msgs.push('В помещении нет размеров, поэтому количество посчиталось как 0. Укажите длину и ширину или введите количество вручную.')}else if((r.works||[]).some(w=>num(w.qty)===0))msgs.push('Количество равно 0. Для работ без размеров укажите количество вручную.');return msgs}
-function tick(ri,ci,wi,on){const r=S.rooms[ri];if(!Array.isArray(r.works))r.works=[];if(!on){r.works.splice(wi,1)}else{const c=CAT[ci],g=geo(r);const qty=c[5]==='manual'?1:g[c[5]];r.works.push({sec:c[0],surf:c[1],name:c[2],unit:c[3],price:catP(ci)??'',base:c[5],qty:qty,auto:c[5]!=='manual'})}save();render()}
+function tick(ri,ci,wi,on){const r=S.rooms[ri];if(!r||!Array.isArray(r.works))return;if(!on){if(wi>=0&&wi<r.works.length)r.works.splice(wi,1)}else{const c=CAT[ci];if(!c)return;if(r.works.some(w=>w.sec===c[0]&&w.name===c[2]&&w.ci!==-1))return;const g=geo(r);const qty=c[5]==='manual'?1:g[c[5]];r.works.push({sec:c[0],surf:c[1],name:c[2],unit:c[3],price:catP(ci)??'',base:c[5],qty:qty,auto:c[5]!=='manual',ci})}save();render()}
 function addCustom(ri,sec){const u=prompt('Единица измерения (м2, м/п, шт)','шт');if(u===null)return;S.rooms[ri].works.push({sec,surf:'',name:'Своя работа',unit:u||'шт',price:'',base:'manual',qty:1,auto:false,ci:-1});save();render()}
 function setR(ri,k,v){const r=S.rooms[ri];if(k==='name'){r[k]=v;save();render();return}const p=parseUserNum(v,0,10000);r[k]=p.store;r.bad=r.bad||{};r.bad[k]=p.bad;const g=geo(r);(r.works||[]).forEach(w=>{if(w.auto&&w.base!=='manual')w.qty=g[w.base]});save();render()}
 function setW(ri,wi,k,v){const w=S.rooms[ri].works[wi];w[k]=v;if(k==='qty')w.auto=false;save();renderTotals()}
@@ -323,7 +346,7 @@ function _render(){
  if(typeof S.tab!=='number'){document.getElementById('rooms').innerHTML='';document.getElementById('dims').innerHTML=S.tab==='s'?'Сводная по всем помещениям':(S.rooms.length?'Выберите помещение на панели сверху, чтобы отметить работы галочками.':'Заполните объект и добавьте помещения.');renderTotals();return}
  const ri=S.tab,r=S.rooms[ri],g=geo(r);
  document.getElementById('dims').innerHTML=r.noDims?'Помещение без размеров (электрика / сантехника на весь объект)':
-  `Длина: <b>${r.L||'—'}</b> &nbsp; Ширина: <b>${r.W||'—'}</b> &nbsp; Высота: <b>${r.H||'—'}</b> &nbsp; Откосы: <b>${r.slopes||'—'}</b> &nbsp; Проёмы: <b>${r.open||'—'}</b> &nbsp; Периметр: <b>${g.perim}</b> &nbsp; Стены: <b>${g.walls}</b> &nbsp; Пол: <b>${g.floor}</b>`;
+  `Длина: <b>${r.L||'—'}</b> &nbsp; Ширина: <b>${r.W||'—'}</b> &nbsp; Высота: <b>${r.H||'—'}</b> &nbsp; Откосы: <b>${r.slopes||'—'}</b> &nbsp; Проёмы: <b>${r.open||'—'}</b> &nbsp; Периметр: <b>${g.perim}</b> &nbsp; Стены: <b>${g.walls}</b> &nbsp; Пол: <b>${g.floor}${g.floorManual?' (вручную)':''}</b>`;
  const row=(w,wi,ci,label,surf)=>{const on=wi>=0;const price=on?w.price:(CAT[ci][4]??'');
   return `<div class="wr${on?' on':''}" data-n="${esc((label||'')+' '+(surf||'')).toLowerCase()}"><label class="ck"><input type="checkbox" ${on?'checked':''} onchange="tick(${ri},${ci},${wi},this.checked)"></label>
    <div>${on&&ci<0?`<input class="win nm" value="${esc(w.name)}" data-r="${ri}" data-w="${wi}" data-k="name">`:esc(label)}</div>
@@ -332,15 +355,16 @@ function _render(){
    <b id="ls${ri}_${wi}">${money(lineSum(w))}</b></div>`:`<div class="muted">${catP(ci)==null?'цена вручную':Number(catP(ci)).toLocaleString('ru-RU')+' р. / '+CAT[ci][3]}</div>`}</div>`};
  r.openS=r.openS||{};
  const secs=SECTIONS.map(sec=>{let n=0,sum=0;const by={};
-  CAT.forEach((c,ci)=>{if(c[0]!==sec)return;const wi=r.works.findIndex(w=>w.sec===sec&&w.name===c[2]&&w.ci!==-1);if(wi>=0){n++;sum+=lineSum(r.works[wi])}(by[c[1]]=by[c[1]]||[]).push([r.works[wi],wi,ci,c[2],c[1]])});
-  r.works.forEach((w,wi)=>{if(w.sec===sec&&!CAT.some(c=>c[0]===sec&&c[2]===w.name&&w.ci!==-1)){n++;sum+=lineSum(w);(by[w.surf||'своя']=by[w.surf||'своя']||[]).push([w,wi,-1,w.name,w.surf||'своя'])}});
+  const used=new Set();
+  CAT.forEach((c,ci)=>{if(c[0]!==sec)return;const wi=r.works.findIndex((w,i)=>!used.has(i)&&w.sec===sec&&w.name===c[2]&&w.ci!==-1);if(wi>=0){used.add(wi);n++;sum+=lineSum(r.works[wi])}(by[c[1]]=by[c[1]]||[]).push([wi>=0?r.works[wi]:undefined,wi,ci,c[2],c[1]])});
+  r.works.forEach((w,wi)=>{if(w.sec!==sec||used.has(wi))return;used.add(wi);n++;sum+=lineSum(w);(by[w.surf||'своя']=by[w.surf||'своя']||[]).push([w,wi,-1,w.name,w.surf||'своя'])});
   let body='';
   Object.keys(by).forEach(surf=>{const ss=by[surf].reduce((a,x)=>a+(x[1]>=0?lineSum(x[0]):0),0);
    body+=`<div class="surf" data-s="${esc(surf)}">${esc(surf)}${ss?`<span>${money(ss)}</span>`:''}</div>`+by[surf].map(x=>row(...x)).join('')});
   body+=`<div style="padding:6px 10px"><button class="sec" onclick="addCustom(${ri},'${sec}')">+ своя работа</button></div>`;
   return `<div class="catsec"><div class="sech" onclick="S.rooms[${ri}].openS['${sec}']=!S.rooms[${ri}].openS['${sec}'];save();render()">${S.rooms[ri].openS[sec]?'▾':'▸'} ${esc(sec)}${SP.includes(sec)?' <span class=muted>спецмонтаж</span>':''} <span class="cnt${n?' has':''}">${n}</span><span class="sum">${n?money(sum):''}</span></div>
    <div class="secbody" style="display:${r.openS[sec]?'block':'none'}" data-open="${r.openS[sec]?1:0}">${body}</div></div>`}).join('');
- const dims=r.noDims?'':`<div class="grid">${[['L','Длина, м'],['W','Ширина, м'],['H','Высота, м'],['open','Проёмы, м²'],['slopes','Откосы, м/п']].map(([k,l])=>`<label>${l}<input type="text" inputmode="decimal" value="${esc(r[k])}" data-r="${ri}" data-k="${k}" class="rin${r.bad&&r.bad[k]?' bad':''}"></label>`).join('')}</div>`;
+ const dims=r.noDims?'':`<div class="grid">${[['L','Длина, м'],['W','Ширина, м'],['H','Высота, м'],['floor','Площадь пола, м²'],['open','Проёмы, м²'],['slopes','Откосы, м/п']].map(([k,l])=>`<label>${l}<input type="text" inputmode="decimal" value="${esc(r[k]??'')}" placeholder="${k==='floor'?'авто':''}" data-r="${ri}" data-k="${k}" class="rin${r.bad&&r.bad[k]?' bad':''}"></label>`).join('')}</div>`;
  document.getElementById('rooms').innerHTML=`<div class="card"><div style="display:flex;gap:8px;align-items:center"><input value="${esc(r.name)}" data-r="${ri}" data-k="name" class="rin" style="font-weight:600;font-size:16px;max-width:300px">
   <button class="del" onclick="if(confirm('Удалить помещение?')){S.rooms.splice(${ri},1);S.tab='p';save();render()}">Удалить</button></div>${dims}
   <div class="search"><input id="q" placeholder="Поиск по справочнику..." value="${esc(q)}" oninput="filterCat(this.value)"><span class="muted">галочка добавляет работу</span></div>
@@ -355,7 +379,8 @@ function renderTotals(){const d=disc();S.rooms.forEach((r,ri)=>{const t=roomTot(
   (r.works||[]).forEach((w,wi)=>{const c=document.getElementById('ls'+ri+'_'+wi);if(c)c.textContent=money(lineSum(w))});
   el.innerHTML=`<span>Общестрой: ${money(t.g)}</span><span>Спецмонтаж: ${money(t.s)}</span><span>Итого по помещению: ${money(t.t)}</span>${d?`<span>Со скидкой ${d}%: ${money(roomFin(r))}</span>`:''}`});
  const T=totals(),area=num(S.area)||T.fa,spec=KD().discSpec;
- const dLab=(spec&&d)?`Скидка ${T.d}% на общестрой и спецмонтаж (−${money(T.t-T.td)})`:`Скидка на общестрой: ${T.d}% (−${money(T.g-T.gd)})`;
+ const saved=Math.max(0,T.t-T.td);
+ const dLab=(spec&&d)?`Скидка ${T.d}% на общестрой и спецмонтаж (−${money(saved)})`:`Скидка на общестрой: ${T.d}% (−${money(saved)})`;
  const rows=S.rooms.map(r=>{const t=roomTot(r),g=geo(r);return{name:r.name,floor:g.floor||'-',walls:g.walls||'-',g:money(t.g),s:money(t.s),t:money(t.t)}});
  const el=document.getElementById('summary');if(!el)return;
  el.innerHTML=`<h3 style="margin-top:0">Итого по объекту</h3><table class="svod-table">
@@ -368,7 +393,7 @@ function renderTotals(){const d=disc();S.rooms.forEach((r,ri)=>{const t=roomTot(
  <span>В т.ч. НДС 5%: ${fmtVat(T.td)}</span>${area?`<span>За м²: ${money(T.td/area)}</span>`:''}</div>`}
 function bindObj(){['addr','client','area','num','date','disc'].forEach(k=>document.getElementById('o_'+k).oninput=e=>{S[k]=e.target.value;save();renderTotals()});
  document.getElementById('o_disc').onchange=e=>{S.disc=disc();e.target.value=S.disc;save();render()}}
-function newObj(){if(confirm('Начать новую смету? Текущая будет удалена (сначала можно сделать экспорт).')){const price=S.price,use=S.usePriceList;S=blank();if(Array.isArray(price))S.price=price;S.usePriceList=!!use;save();bindK();render()}}
+function newObj(){if(confirm('Начать новую смету? Текущая будет удалена (сначала можно сделать экспорт).')){const price=S.price,use=S.usePriceList;S=blank();if(Array.isArray(price))S.price=price;S.usePriceList=!!use;assistUndo=null;const u=document.getElementById('assist-undo');if(u)u.hidden=true;save();bindK();render()}}
 function exportJSON(){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='smeta_'+(S.addr||'obj').replace(/[^\wа-яё]+/gi,'_')+'.json';a.click()}
 function validEstimate(d){if(!d||typeof d!=='object'||Array.isArray(d))return false;if(!Array.isArray(d.rooms))return false;for(const r of d.rooms){if(!r||typeof r!=='object'||Array.isArray(r))return false;if(!Array.isArray(r.works))return false;for(const w of r.works){if(!w||typeof w!=='object'||Array.isArray(w))return false}}if(d.price!=null&&!Array.isArray(d.price))return false;return true}
 function importJSON(inp){const f=inp.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!validEstimate(d))throw 0;const keep=S.price;const copy=JSON.parse(JSON.stringify(d));S=copy;if(!Array.isArray(S.price)&&keep)S.price=keep;save();bindK();render()}catch(e){alert('Файл не подходит')}});inp.value=''}
@@ -382,29 +407,15 @@ function dt(s){s=s||S.date;if(!s)return'';const[y,m,d]=s.split('-');return`${+d}
 const CO_DEF={name:'ООО «МАСТЕРА РЕМОНТА»',slogan:'Ремонт квартир в Москве и области',dirFull:'Лодвиг Артема Олеговича',dirShort:'Лодвиг А. О.',hot:'+7 (499) 495-11-97',hot8:'8 (499) 495-11-97',
  rek:'109544, Город Москва, вн.тер. г. Муниципальный\nОкруг Таганский, б-р Энтузиастов, дом 2,\nпомещение 12/24\nИНН 9721066131 / КПП 770501001\nр/сч 40702810900000078542 в АО\n«Райффайзенбанк» г.Москва\nк/сч 30101810200000000700\nБИК 044525700 ОКПО 28670995\nОКПО 28670995\ne-mail: info-mr@mastera-remonta.com\ne-mail: _________________@mastera-remonta.com\nWhatsApp(мессенджер)_________________________\nTelegram (мессенджер)________________________\n+7(499) 495-11-97',
  author:'',city:'г. Москва'};
-const K_DEF={fio:'',pser:'',pby:'',pdate:'',pcode:'',reg:'',phone:'',email:'',wa:'',tg:'',cno:'',cdate:'',rooms:'',start:'',rep:'',smId:'',discSpec:false,includePrice:true,prepay:'',refund:''};
+const K_DEF={fio:'',pser:'',pby:'',pdate:'',pcode:'',reg:'',phone:'',email:'',wa:'',tg:'',cno:'',cdate:'',rooms:'',start:'',rep:'',smId:'',rev:'',discSpec:false,includePrice:true,prepay:'',refund:''};
 function CO(){S.co=Object.assign({},CO_DEF,S.co||{});return S.co}
 function KD(){S.k=Object.assign({},K_DEF,S.k||{});return S.k}
-// --- сумма прописью ---
-function words(n){n=Math.floor(Math.abs(n));if(n===0)return'ноль';
- const u=[['','один','два','три','четыре','пять','шесть','семь','восемь','девять'],['','одна','две','три','четыре','пять','шесть','семь','восемь','девять']],
- t10=['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'],
- tens=['','','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто'],
- hund=['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот'],
- groups=[[null,0],[['тысяча','тысячи','тысяч'],1],[['миллион','миллиона','миллионов'],0],[['миллиард','миллиарда','миллиардов'],0]];
- let out=[],g=0;while(n>0){const x=n%1000;if(x){const w=[];w.push(hund[Math.floor(x/100)]);const r=x%100;
-  if(r>=10&&r<20)w.push(t10[r-10]);else{w.push(tens[Math.floor(r/10)]);w.push(u[groups[g][1]][r%10])}
-  if(groups[g][0])w.push(plural(x,groups[g][0]));out.unshift(w.filter(Boolean).join(' '))}n=Math.floor(n/1000);g++}return out.join(' ')}
-function plural(n,f){n=Math.abs(n)%100;const n1=n%10;if(n>10&&n<20)return f[2];if(n1>1&&n1<5)return f[1];if(n1===1)return f[0];return f[2]}
-const sp=n=>Math.floor(n).toLocaleString('ru-RU').replace(/\u00a0/g,'\u00a0');
-function kop(x){return String(Math.round((x-Math.floor(x))*100)%100).padStart(2,'0')}
-function rubWords(x){x=Math.round(x*100)/100;const r=Math.floor(x),k=kop(x);return `${words(r)} ${plural(r,['рубль','рубля','рублей'])} ${k} ${plural(+k,['копейка','копейки','копеек'])}`}
-const vat=x=>Math.round(x*5/105*100)/100;
-const rk=x=>`${sp(x)} р. ${kop(x)} коп.`;
-// --- итоги так же, как в Ремфае: строки округляются до рубля, итоги помещений со скидкой тоже ---
-function roomFin(r){const d=disc()/100,t=roomTot(r),ds=KD().discSpec;return Math.round(t.g*(1-d)+t.s*(ds?1-d:1))}
-function objFin(){return S.rooms.reduce((a,r)=>a+roomFin(r),0)}
-function objBase(){return S.rooms.reduce((a,r)=>a+roomTot(r).t,0)}
+const words=SmetaCalc.words,plural=SmetaCalc.plural,sp=SmetaCalc.sp,rubWords=SmetaCalc.rubWords,kop=SmetaCalc.kopStrFromAmount;
+const vat=x=>SmetaCalc.vatValue(x);
+const rk=x=>{const n=Math.round(Math.abs(num(x))*100);return sp(Math.floor(n/100))+' р. '+String(n%100).padStart(2,'0')+' коп.'};
+function roomFin(r){return SmetaCalc.roomFin(r,disc(),KD().discSpec,SP)}
+function objFin(){return SmetaCalc.objFin(S.rooms,disc(),KD().discSpec,SP)}
+function objBase(){return SmetaCalc.objBase(S.rooms,SP)}
 const F=(v,blank)=>v?esc(v):(blank||'___________________');
 // ----- смета -----
 const n2=x=>{const n=num(x);return n?String(n):'-'};
@@ -414,7 +425,7 @@ function smHead(title,g){const k=KD();
  return `<div class="sh">${LOGO}
  <table class="hb">
  <tr><td class="lab">Приложение №1<br>к договору №</td><td class="c">${ital(esc(k.cno)||'-')}</td><td class="mid">от</td><td class="val">${ital(k.cdate?dt(k.cdate):dt())}</td></tr>
- <tr><td class="lab">ID</td><td class="c">${ital(esc(k.smId)||'—')}</td><td class="mid">${title?'Помещение':''}</td><td class="val">${ital(title?esc(title):'')}</td></tr>
+ <tr><td class="lab">ID</td><td class="c">${ital(esc(k.smId)||'—')}</td><td class="mid">${title?'Помещение':'ред.'}</td><td class="val">${ital(title?esc(title):(esc(k.rev)||'—'))}</td></tr>
  <tr><td class="lab">Смета №</td><td class="c">${ital(esc(S.num))}</td><td class="mid">от</td><td class="val">${ital(dt())}</td></tr>
  ${g?`<tr><td class="lab">Площадь, кв.м.</td><td class="c">${ital(n2(g.floor))}</td><td class="mid">Проемы, м.</td><td class="val">${ital(n2(g.open))}</td></tr>
  <tr><td class="lab">Стены, кв.м.</td><td class="c">${ital(n2(g.walls))}</td><td class="mid">Длина, м.</td><td class="val">${ital(n2(g.L))}</td></tr>
@@ -427,19 +438,19 @@ function buildSmeta(){const d=disc();let h='';
   SECTIONS.forEach(sec=>{const ws=r.works.filter(w=>w.sec===sec);if(!ws.length)return;let ss=0,ls='';
    rows+=`<tr class="sec"><td></td><td>${esc(sec)}</td><td class="r">Цена</td><td class="r">Кол-во</td><td class="r">Сумма</td></tr>`;
    ws.forEach(w=>{if(w.surf!==ls){rows+=`<tr class="sur"><td></td><td colspan=4>${esc(w.surf)}</td></tr>`;ls=w.surf}ss+=lineSum(w);
-    rows+=`<tr><td>${esc(w.surf)}</td><td>${esc(w.name)}</td><td class="r">${sp(+w.price||0)} р.</td><td class="r">${+w.qty||0} ${esc(w.unit)}</td><td class="r">${sp(lineSum(w))} р.</td></tr>`});
+    rows+=`<tr><td>${esc(w.surf)}</td><td>${esc(w.name)}</td><td class="r">${SmetaCalc.numStr(w.price)} р.</td><td class="r">${SmetaCalc.numStr(w.qty)} ${esc(w.unit)}</td><td class="r">${sp(lineSum(w))} р.</td></tr>`});
    rows+=`<tr class="it"><td colspan=4>Итого - ${esc(sec)}</td><td class="r">${sp(ss)} р.</td></tr>`});
   h+=`<div class="pp">${smHead(r.name,g)}<div class="rn">${esc(r.name)}</div><table class="st">${rows}
   <tr class="tt"><td colspan=4>Итого по помещению - ${esc(r.name)}</td><td class="r">${sp(t.t)} р.</td></tr>
   ${d?`<tr class="tt"><td colspan=4>Итого по помещению (со скидкой ${d}%)</td><td class="r">${sp(fin)} р.</td></tr>`:''}
-  <tr class="tt"><td colspan=4>В том числе НДС 5%</td><td class="r">${rk(vat(fin))}</td></tr></table>${smSign()}</div>`});
+  <tr class="tt"><td colspan=4>В том числе НДС 5%</td><td class="r">${SmetaCalc.rkVat(fin)}</td></tr></table>${smSign()}</div>`});
  const fin=objFin(),base=objBase();let P=0,W=0,O=0,Fl=0;
  const rr=S.rooms.map(r=>{const g=geo(r),t=roomTot(r);if(!r.noDims){P+=g.perim;W+=g.walls;O+=g.open||0;Fl+=g.floor}
   return `<tr><td>${esc(r.name)}</td><td class="r">${r.noDims?'-':g.perim}</td><td class="r">${r.noDims?'-':g.walls}</td><td class="r">${r.noDims?'-':n2(g.open)}</td><td class="r">${r.noDims?'-':g.floor}</td><td class="r">${sp(t.t)} р.</td>${d?`<td class="r">${d}</td><td class="r">${sp(roomFin(r))} р.</td>`:''}</tr>`}).join('');
  h+=`<div class="pp">${smHead('',null)}<div class="rn">Сводная по всем помещениям</div><table class="st sv">
  <tr class="sec"><td>Вид помещения</td><td class="r">Периметр, м</td><td class="r">Стены, м2</td><td class="r">Проемы, м2</td><td class="r">Полы, м2</td><td class="r">Стоимость работ</td>${d?'<td class="r">Скидка, %</td><td class="r">Итого со скидкой</td>':''}</tr>${rr}
  <tr class="it"><td>Итого</td><td class="r">${P.toFixed(2)}</td><td class="r">${W.toFixed(2)}</td><td class="r">${O.toFixed(2)}</td><td class="r">${Fl.toFixed(2)}</td><td class="r">${sp(base)} р.</td>${d?`<td></td><td class="r">${sp(fin)} р.</td>`:''}</tr>
- <tr class="tt"><td colspan=${d?7:5}>В том числе НДС 5%</td><td class="r">${rk(vat(fin))}</td></tr></table>
+ <tr class="tt"><td colspan=${d?7:5}>В том числе НДС 5%</td><td class="r">${SmetaCalc.rkVat(fin)}</td></tr></table>
  <p class="note">Уважаемые клиенты, для общего удобства все итоговые суммы, округляются до целых рублей в меньшую сторону.</p>${smSign()}</div>`;
  return h}
 // ----- договор -----
@@ -459,7 +470,7 @@ function rekv(rep){const k=KD(),co=CO();return `<table class="rq"><tr><td><b>П�
 function buildDogovor(){const co=CO(),k=KD(),fin=objFin(),base=objBase(),dsum=base-fin,area=+S.area||S.rooms.reduce((a,r)=>a+geo(r).floor,0);
  const roomsTxt=k.rooms||S.rooms.filter(r=>!r.noDims).map(r=>r.name).join(', ');
  const pre=prepaySum(fin),ret=refundSum(fin);
- const sumTxt=x=>`${sp(x)} руб. (${rubWords(x)})`,vatTxt=x=>`${rk(vat(x))} (${rubWords(vat(x))})`;
+ const sumTxt=x=>`${sp(x)} руб. (${rubWords(x)})`,vatTxt=x=>{const p=SmetaCalc.vatParts(x);return `${SmetaCalc.rkVat(x)} (${SmetaCalc.rubWordsKop(p.rub,p.kop)})`};
  const addr=esc(S.addr)||'_______________________';
  let h=`<div class="dg">${hot()}<div class="dtitle"><b>ДОГОВОР ПОДРЯДА №</b> <span class="cn">${cno()}</span> <b>от</b> ${dateBoxes(true)}</div>${cityLine()}${preamble('заключили настоящий Договор о нижеследующем:')}
 <h3>1. Предмет договора.</h3>
@@ -504,6 +515,7 @@ function buildDogovor(){const co=CO(),k=KD(),fin=objFin(),base=objBase(),dsum=ba
 <p>В случае, если сумма крайнего Акта выполненных работ менее суммы скидки, указанной в настоящем Соглашении, Подрядчик производит возврат суммы скидки из части ранее оплаченных Заказчиком денежных средств за выполненные Работы по настоящему Договору.</p>
 <p>В случае несоблюдения Заказчиком условий настоящего Соглашения скидка аннулируется и оплаты по Договору подряда производятся без учета скидок, определенных в настоящем Соглашении.</p>
 <p>Настоящее Дополнительное соглашение является неотъемлемой частью Договора подряда и обязательно для Сторон и вступает в силу с момента его подписания.</p></div>`;
+ if(k.includePrice!==false) h+=buildPriceAppendix();
  // Дорожная карта
  h+=`<div class="dg pb"><h2>ДОРОЖНАЯ КАРТА И ПОРЯДОК ОПЛАТЫ ПО ДОГОВОРУ ПОДРЯДА</h2><div class="cl"><span>${esc(co.city)}</span><span>${k.cdate?dt(k.cdate):dt(new Date().toISOString().slice(0,10))}</span></div>
 <p>1. В рамках исполнения указанного Договора подряда Заказчику были переданы Подрядчиком следующие документы:<br>1.1 Договор подряда №${cno(13)} от ${quoteDate2()}<br>1.2 Смета (Приложение №1) к договору<br>1.3 Прейскурант на виды работ (Приложение №2) к договору</p>
@@ -513,29 +525,29 @@ function buildDogovor(){const co=CO(),k=KD(),fin=objFin(),base=objBase(),dsum=ba
 <p>2.3 Оплату оказанных Подрядчиком услуг по Договору подряда производит непосредственно сам Заказчик или надлежащим образом уполномоченный им представитель (наличие нотариальной доверенности обязательно).</p>
 <p>2.4 В случае возникновения внештатной ситуации как на объекте, так и недопониманий с представителями Подрядчика и/или третьими лицами, представляющимися представителями Подрядчика, Заказчик обязуется незамедлительно связаться с Подрядчиком по номеру телефона ${esc(co.hot8)}</p></div>`;
  // Согласие ПД
- h+=`<div class="dg pb">${hot()}<h2>СОГЛАСИЕ<br>НА ПЕРЕДАЧУ И ОБРАБОТКУ ПЕРСОНАЛЬНЫХ ДАННЫХ</h2><div class="cl"><span>${esc(co.city)}</span><span>${k.cdate?quoteDate2():'«__» ________________ 20__г'}</span></div>
+ h+=`<div class="dg pb plainpage">${hot()}<h2>СОГЛАСИЕ<br>НА ПЕРЕДАЧУ И ОБРАБОТКУ ПЕРСОНАЛЬНЫХ ДАННЫХ</h2><div class="cl"><span>${esc(co.city)}</span><span>${k.cdate?quoteDate2():'«__» ________________ 20__г'}</span></div>
  <p class="j">Я, ${F(k.fio||S.client)} серия и номер паспорта ${F(k.pser)} выдан ${F(k.pby,'_______________________________________________________________________________')} дата выдачи ${F(k.pdate?dt(k.pdate):'','_____________________')} адрес регистрации ${F(k.reg,'__________________________________________________________________________________')}
  именуемый в дальнейшем Заказчик, в соответствии с Федеральным законом от 27.07.2006 №149-ФЗ «Об информации, информационных технологиях и о защите информации», Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных», Положением об обеспечении безопасности персональных данных при их обработке в информационных системах персональных данных, утвержденным Постановлением Правительства РФ от 17.11.2007г. №781, Положением об особенностях обработки персональных данных, осуществляемой без использования средств автоматизации, утвержденным Постановлением Правительства РФ от 15.09.2008г. №687, иными нормативно-правовыми актами, даю свое согласие на обработку своих персональных данных, а именно: фамилии, имени и отчества, паспортных данных, ИНН, адреса регистрации, номера телефона, электронной почты, иных персональных данных (далее Обработка ПД) предоставленной ${esc(co.name)} (далее – Оператор обработки ПД), в рамках и целях исполнения условий Договора ${k.cno?esc(k.cno):'________________________'} от ${k.cdate?quoteDate2():'«____»___________20__г.'} (далее - Договор).</p>
  <p>Обработка персональных данных может совершаться с использованием средств автоматизации или без использования таких средств с персональными данными, включая сбор, запись, систематизацию, накопление, хранение, уточнение (обновление, изменение), извлечение, использование, передачу (распространение, предоставление, доступ), обезличивание, блокирование, удаление, уничтожение персональных данных с целью исполнения обязательств принятых по условиям Договора, иных обязательств, предусмотренных указанным Договором.</p>
  <p>Срок использования предоставленных персональных данных – на срок действия Договора или до получения письменного уведомления о запрете на обработку персональных данных.</p>
  <p class="r">_____________________________<br>${F(k.fio||S.client)}</p></div>`;
- if(KD().includePrice!==false) h+=buildPriceAppendix();
  return h}
 function setPrintStyle(mode){let st=document.getElementById('pst');if(!st){st=document.createElement('style');st.id='pst';document.head.appendChild(st)}
- const cl=(KD().fio||S.client||'').replace(/["\\]/g,'');
- st.textContent=mode==='dog'?`@page{size:210mm 297mm;margin:18mm 18mm 22mm 21mm;
+ const cl=SmetaCalc.cssSafe(KD().fio||S.client||'');
+ const box=document.getElementById('print');if(box){box.classList.toggle('mode-dog',mode==='dog');box.classList.toggle('mode-sm',mode!=='dog')}
+ st.textContent=mode==='dog'?`@page{size:210mm 297mm;margin:18mm 16mm 22mm 18mm;
  @bottom-left{content:"Подрядчик: ______________________\\A_________________________________";white-space:pre;font:11pt 'Liberation Serif','Times New Roman',serif;vertical-align:top}
  @bottom-right{content:"Заказчик: ${cl}\\A_________________________________";white-space:pre;font:11pt 'Liberation Serif','Times New Roman',serif;text-align:left;vertical-align:top}
  @bottom-center{content:counter(page) " из " counter(pages);font:9pt 'Liberation Serif','Times New Roman',serif;vertical-align:bottom}}`
- :`@page{size:210mm 297mm;margin:18mm 11mm 16mm 21mm}`}
+ :`@page{size:210mm 297mm;margin:16mm 14mm 16mm 16mm}`}
 function doPrint(mode){mode=mode||'sm';setPrintStyle(mode);document.getElementById('print').innerHTML=mode==='dog'?buildDogovor():buildSmeta();setTimeout(()=>window.print(),50)}
 window.onbeforeprint=()=>{if(!document.getElementById('print').innerHTML){setPrintStyle('sm');document.getElementById('print').innerHTML=buildSmeta()}};
 window.onafterprint=()=>{document.getElementById('print').innerHTML=''};
 
 const CO_KEY='smeta_co';
 
-function prepaySum(fin){const k=KD();return String(k.prepay??'').trim()!==''?Math.round(num(k.prepay)):Math.round(fin*0.05/1000)*1000}
-function refundSum(fin){const k=KD();return String(k.refund??'').trim()!==''?Math.round(num(k.refund)):Math.round(fin*0.03/1000)*1000}
+function prepaySum(fin){return SmetaCalc.prepay(fin,KD().prepay)}
+function refundSum(fin){return SmetaCalc.refund(fin,KD().refund)}
 function editablePrice(){if(!Array.isArray(S.price))S.price=JSON.parse(JSON.stringify(PRICE_DEF));return S.price}
 function renderPrice(){const list=getPrice();const q=(document.getElementById('pq')||{}).value||'';
  const by={};list.forEach((it,i)=>{(by[it.s]=by[it.s]||[]).push([it,i])});
@@ -574,12 +586,12 @@ function delPrice(i){if(!confirm('Удалить позицию?'))return;editab
 function addPriceItem(sec){const list=editablePrice();const last=[...list].reverse().find(it=>it.s===sec);list.push({sn:last?last.sn:'',s:sec,u:last?last.u:'',n:'',name:'Новая позиция',un:'шт',p:0});save();renderPrice()}
 function addPriceSec(){const name=prompt('Название раздела');if(!name)return;editablePrice().push({sn:'',s:name,u:'',n:'',name:'Новая позиция',un:'шт',p:0});save();renderPrice()}
 function resetPrice(){if(!confirm('Вернуть прайс из образца договора? Текущие правки прайса будут удалены.'))return;delete S.price;try{localStorage.removeItem(PRICE_KEY)}catch(e){}save();renderPrice()}
-function toggleUsePrice(on){S.usePriceList=!!on;if(on){S.rooms.forEach(r=>(r.works||[]).forEach(w=>{if(w.ci===-1)return;const p=findPrice(w.name,w.surf,w.sec);if(p!=null)w.price=p}))}else{S.rooms.forEach(r=>(r.works||[]).forEach(w=>{const ci=CAT.findIndex(c=>c[0]===w.sec&&c[2]===w.name);if(ci>=0&&CAT[ci][4]!=null)w.price=CAT[ci][4]}))}save()}
+function toggleUsePrice(on){S.usePriceList=!!on;if(on){S.rooms.forEach(r=>(r.works||[]).forEach(w=>{if(w.ci===-1)return;const p=findPrice(w.name,w.surf,w.sec);if(p!=null)w.price=p}))}else{S.rooms.forEach(r=>(r.works||[]).forEach(w=>{const ci=CAT.findIndex(c=>c[0]===w.sec&&c[2]===w.name);if(ci>=0&&CAT[ci][4]!=null)w.price=CAT[ci][4]}))}save();render()}
 function exportPrice(kind){const list=getPrice();let blob,name;if(kind==='csv'){const lines=[['section','surface','n','name','unit','price'].join(';')].concat(list.map(it=>[it.s,it.u,it.n,String(it.name||'').replace(/;/g,','),it.un,it.p].join(';')));blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});name='price.csv'}else{blob=new Blob([JSON.stringify(list,null,1)],{type:'application/json'});name='price.json'}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click()}
 function validPrice(arr){return Array.isArray(arr)&&arr.length>0&&arr.every(it=>it&&typeof it==='object'&&it.name!=null)}
 function importPrice(inp){const f=inp.files[0];if(!f)return;f.text().then(t=>{try{let arr;if(/\.csv$/i.test(f.name)||t.includes(';')&&t.split('\n')[0].toLowerCase().includes('name')){const lines=t.replace(/^\ufeff/,'').split(/\r?\n/).filter(Boolean);const start=lines[0].toLowerCase().includes('name')?1:0;arr=[];for(let i=start;i<lines.length;i++){const p=lines[i].split(';');if(p.length<5)continue;arr.push({s:p[0]||'',u:p[1]||'',n:p[2]||'',name:p[3]||'',un:p[4]||'',p:num(p[5])})}}else{arr=JSON.parse(t);if(arr&&arr.price)arr=arr.price}if(!validPrice(arr))throw 0;S.price=arr;save();renderPrice()}catch(e){alert('Файл прайса не подходит')}});inp.value=''}
 function buildPriceAppendix(){const list=getPrice(),k=KD();
- let h=`<div class="dg pb prapp">${hot()}<div class="prtitle">Приложение № 2 к договору № <span class="cn">${cno()}</span> от ${dateBoxes(true)}</div>
+ let h=`<div class="dg pb prapp">${hot()}${k.rev?`<div class="prtitle">Документ ред. ${esc(k.rev)}</div>`:''}<div class="prtitle">Приложение № 2 к договору № <span class="cn">${cno()}</span> от ${dateBoxes(true)}</div>
  <table class="prt"><thead><tr><th class="n"></th><th></th><th>Ед. изм.</th><th>Цена</th></tr></thead><tbody>`;
  let lastS=null,lastU=null;
  list.forEach(it=>{
@@ -590,6 +602,106 @@ function buildPriceAppendix(){const list=getPrice(),k=KD();
  h+=`</tbody></table><div class="prnotes">${PRICE_NOTES}</div><p style="text-align:center;font-weight:700;margin-top:12pt">ЦЕНЫ ДЕЙСТВИТЕЛЬНЫ 120 ДНЕЙ С МОМЕНТА ЗАКЛЮЧЕНИЯ ДОГОВОРА</p></div>`;
  return h}
 
+let assistResult=null, assistUndo=null;
+function catalogForAssist(){return CAT.map((c,i)=>({i,sec:c[0],surf:c[1],name:c[2],unit:c[3],price:c[4],base:c[5]}))}
+function runAssist(){
+ const text=document.getElementById('assist-text').value;
+ const def=typeof S.tab==='number'&&S.rooms[S.tab]?S.rooms[S.tab].name:'';
+ assistResult=SmetaAssist.parseWorks(text,{catalog:catalogForAssist(),defaultRoom:def});
+ renderAssist();
+}
+function clearAssist(){document.getElementById('assist-text').value='';assistResult=null;document.getElementById('assist-out').innerHTML=''}
+function renderAssist(){
+ const box=document.getElementById('assist-out'),res=assistResult;
+ if(!res){box.innerHTML='';return}
+ let html='';
+ (res.warnings||[]).forEach(w=>{html+=`<div class="anote">${esc(w)}</div>`});
+ (res.unknown||[]).forEach(u=>{html+=`<div class="aerr">Не добавлено: «${esc(u.text)}». ${esc(u.reason)}</div>`});
+ (res.rooms||[]).forEach((room,ri)=>{
+  const d=room.dims||{},bits=[];
+  if(d.L!=null&&d.W!=null)bits.push(d.L+' × '+d.W+' м');
+  if(d.H!=null)bits.push('высота '+d.H+' м');
+  if(d.floor!=null)bits.push('пол '+d.floor+' м²');
+  if(d.walls!=null)bits.push('стены '+d.walls+' м²');
+  html+=`<div class="aroom" data-room="${ri}"><h4>${esc(room.name)}${room.noDims?' <span class="muted">без размеров</span>':''}</h4>`;
+  if(bits.length)html+=`<div class="muted">${esc(bits.join(' · '))}</div>`;
+  (room.questions||[]).forEach(q=>{html+=`<div class="anote">${esc(q)}</div>`});
+  room.proposals.forEach((p,pi)=>{
+   const item=p.item;
+   const priceTxt=item?(item.price==null?'цена вручную':Number(item.price).toLocaleString('ru-RU')+' р. / '+item.unit):'';
+   html+=`<div class="aprop"><label class="ck"><input type="checkbox" data-ar="${ri}" data-ap="${pi}" ${p.include?'checked':''}></label>
+    <div><div class="aname">${item?esc(item.name):'Выберите позицию'}</div>
+    <div class="muted ameta">${item?esc(item.sec+' · '+item.surf+' · '+priceTxt):esc(p.note||'')}</div>
+    ${p.kind==='choice'?`<select class="achoice" data-ar="${ri}" data-ap="${pi}"><option value="">— выберите позицию —</option>${p.options.map((op,oi)=>`<option value="${oi}">${esc(op.name)} — ${op.price==null?'цена вручную':Number(op.price).toLocaleString('ru-RU')+' р. / '+esc(op.unit)}</option>`).join('')}</select>`:''}
+    ${p.note&&p.kind!=='choice'?`<div class="muted">${esc(p.note)}</div>`:''}</div>
+    <div class="ed"><input type="text" inputmode="decimal" class="aqty" data-ar="${ri}" data-ap="${pi}" value="${esc(p.qty==null?'':String(p.qty))}" placeholder="кол-во" style="width:88px"> <span class="aunit">${esc(item?item.unit:(p.options&&p.options[0]?p.options[0].unit:''))}</span> <b class="asum"></b></div></div>`;
+  });
+  html+=`</div>`;
+ });
+ if((res.rooms||[]).some(r=>r.proposals&&r.proposals.length)) html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" id="assist-add">Добавить отмеченные</button></div>`;
+ box.innerHTML=html;
+ box.querySelectorAll('.aprop').forEach(row=>{
+  const cb=row.querySelector('input[type=checkbox]'),qty=row.querySelector('.aqty'),sel=row.querySelector('.achoice'),sum=row.querySelector('.asum'),unit=row.querySelector('.aunit'),name=row.querySelector('.aname'),meta=row.querySelector('.ameta');
+  const refresh=()=>{
+   const p=res.rooms[+cb.dataset.ar].proposals[+cb.dataset.ap];
+   let item=p.item;
+   if(sel){item=sel.value===''?null:p.options[+sel.value]}
+   if(item){name.textContent=item.name;meta.textContent=item.sec+' · '+item.surf+' · '+(item.price==null?'цена вручную':Number(item.price).toLocaleString('ru-RU')+' р. / '+item.unit);unit.textContent=item.unit}
+   const raw=qty.value.trim();
+   const q=parseUserNum(raw,0,100000);
+   qty.classList.toggle('bad',q.bad);
+   if(item&&item.price!=null&&raw!==''&&!q.bad) sum.textContent=money(Math.round(num(item.price)*q.n));
+   else sum.textContent='';
+  };
+  cb.addEventListener('change',refresh); qty.addEventListener('input',refresh); if(sel) sel.addEventListener('change',refresh);
+  refresh();
+ });
+ const add=document.getElementById('assist-add'); if(add) add.onclick=applyAssist;
+}
+function assistStatus(cls,text){
+ const box=document.getElementById('assist-out');
+ box.querySelectorAll('.assist-status').forEach(n=>n.remove());
+ const note=document.createElement('div'); note.className=cls+' assist-status'; note.textContent=text; box.prepend(note);
+}
+function applyAssist(){
+ if(!assistResult) return;
+ const rows=[];
+ document.querySelectorAll('#assist-out .aprop').forEach(row=>{
+  const cb=row.querySelector('input[type=checkbox]');
+  const room=assistResult.rooms[+cb.dataset.ar], p=room.proposals[+cb.dataset.ap];
+  let item=p.item; const sel=row.querySelector('.achoice');
+  if(sel) item=sel.value===''?null:p.options[+sel.value];
+  const raw=row.querySelector('.aqty').value.trim();
+  const q=parseUserNum(raw,0,100000);
+  rows.push({include:cb.checked,item,roomName:room.name,noDims:room.noDims,dims:room.dims,qty:raw===''||q.bad?null:q.n});
+ });
+ const plan=SmetaAssist.applyPlan(S.rooms,rows);
+ if(!plan.added.length){
+  const why=plan.skipped.filter(s=>s.reason!=='не отмечено').map(s=>(s.name||'позиция')+' ('+(s.room||'')+'): '+s.reason);
+  assistStatus('aerr', why.length?('Ничего не добавлено. '+why.join('; ')): 'Отметьте позиции и укажите количество.');
+  return;
+ }
+ assistUndo=JSON.parse(JSON.stringify(S.rooms));
+ S.rooms=plan.rooms;
+ const idx=S.rooms.findIndex(r=>r.name===plan.added[0].room);
+ if(idx>=0)S.tab=idx;
+ save(); render();
+ const undo=document.getElementById('assist-undo'); if(undo) undo.hidden=false;
+ const skipped=plan.skipped.filter(s=>s.reason!=='не отмечено');
+ let msg='Добавлено '+plan.added.length+' поз. Прежняя смета на месте, позиции можно доработать в помещении.';
+ if(skipped.length) msg+=' Не добавлено: '+skipped.map(s=>s.name+' — '+s.reason).join('; ')+'.';
+ assistStatus('aok', msg);
+}
+function undoAssist(){
+ if(!assistUndo) return;
+ S.rooms=assistUndo; assistUndo=null; save(); render();
+ const undo=document.getElementById('assist-undo'); if(undo) undo.hidden=true;
+ assistStatus('anote','Последнее добавление отменено. Смета вернулась к прежнему составу.');
+}
+document.getElementById('assist-run').onclick=runAssist;
+document.getElementById('assist-clear').onclick=clearAssist;
+document.getElementById('assist-undo').onclick=undoAssist;
+document.getElementById('assist-text').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();runAssist()}});
 function bindK(){const k=KD(),co=CO();try{const saved=JSON.parse(localStorage.getItem(CO_KEY)||'{}');if(saved&&!S.co_own)Object.assign(co,saved)}catch(e){}
  document.querySelectorAll('[data-k]').forEach(e=>{if(e.type==='checkbox')e.checked=e.dataset.k==='includePrice'?k.includePrice!==false:!!k[e.dataset.k];else e.value=k[e.dataset.k]||'';
   e.oninput=e.onchange=()=>{KD()[e.dataset.k]=e.type==='checkbox'?e.checked:e.value;save();renderTotals()}});
