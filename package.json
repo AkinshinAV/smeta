@@ -2,7 +2,7 @@
   "name": "smeta",
   "private": true,
   "scripts": {
-    "test": "node --test test/calc.test.js test/assist.test.js",
+    "test": "node --test test/calc.test.js test/assist.test.js test/library.test.js test/sync.test.js test/server.test.mjs",
     "test:browser": "node test/browser.mjs"
   },
   "devDependencies": {

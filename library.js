@@ -1,4 +1,6 @@
-/* Список объектов в браузере. Не пишет в чужие ключи: страница передаёт только свои. */
+/* Список объектов и смет в браузере. Не пишет в чужие ключи: страница передаёт только свои.
+   Схема v2: объект (карточка) отдельно от смет. Старые записи v1 в работу не берутся:
+   непустой неподходящий текст сохраняется побайтно и не затирается без копии. */
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -24,15 +26,14 @@
     return true;
   }
 
-  function isLibrary(v) {
-    return assessLibrary(v, validEstimate).state === 'ok';
+  function validId(id) {
+    return typeof id === 'string' && !!id && id.length <= 80 && !/[<>"'\\\s]/.test(id);
   }
 
-  function validItem(item, check) {
+  function validEstimateItem(item, check) {
     try {
       if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
-      if (typeof item.id !== 'string' || !item.id || item.id.length > 80) return false;
-      if (/[<>"'\\\s]/.test(item.id)) return false;
+      if (!validId(item.id)) return false;
       if (item.archived != null && typeof item.archived !== 'boolean') return false;
       return check(item.estimate);
     } catch (e) {
@@ -40,22 +41,106 @@
     }
   }
 
+  function str(v) { return typeof v === 'string' ? v : ''; }
+
+  function normRev(v) {
+    return typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 1e9 ? v : 0;
+  }
+
+  function normConflict(v) {
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+    try {
+      const s = JSON.stringify(v);
+      if (s.length > 500000) return null;
+      return JSON.parse(s);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function normEstimateItem(item) {
+    const out = {
+      id: item.id,
+      created: str(item.created),
+      updated: str(item.updated),
+      archived: item.archived === true,
+      rev: normRev(item.rev),
+      dirty: item.dirty === true,
+      syncConflict: item.syncConflict === true,
+      estimate: item.estimate
+    };
+    const conflict = normConflict(item.conflictServer);
+    if (conflict) out.conflictServer = conflict;
+    return out;
+  }
+
+  function cleanObject(obj, check) {
+    try {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+      if (!validId(obj.id)) return null;
+      if (obj.archived != null && typeof obj.archived !== 'boolean') return null;
+      if (!Array.isArray(obj.estimates)) return null;
+      for (const key of ['name', 'addr', 'client', 'phone', 'email', 'note']) {
+        if (obj[key] != null && typeof obj[key] !== 'string') return null;
+      }
+      const estimates = [];
+      let bad = 0;
+      for (const item of obj.estimates) {
+        if (validEstimateItem(item, check)) estimates.push(normEstimateItem(item));
+        else bad++;
+      }
+      if (!estimates.length) return null;
+      return {
+        bad,
+        obj: {
+          id: obj.id,
+          created: str(obj.created),
+          updated: str(obj.updated),
+          archived: obj.archived === true,
+          rev: normRev(obj.rev),
+          dirty: obj.dirty === true,
+          syncConflict: obj.syncConflict === true,
+          conflictServer: normConflict(obj.conflictServer) || undefined,
+          name: str(obj.name),
+          addr: str(obj.addr),
+          client: str(obj.client),
+          phone: str(obj.phone),
+          email: str(obj.email),
+          note: str(obj.note),
+          estimates
+        }
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
   function assessLibrary(value, check) {
     try {
       if (value == null) return { state: 'empty' };
-      if (typeof value !== 'object' || Array.isArray(value)) return { state: 'invalid' };
-      if (!Array.isArray(value.items)) return { state: 'invalid' };
-      const good = [];
+      if (typeof value !== 'object' || Array.isArray(value) || value.v !== 2 || !Array.isArray(value.objects)) return { state: 'invalid' };
+      const objects = [];
       let bad = 0;
-      for (const item of value.items) {
-        if (validItem(item, check)) good.push(item);
-        else bad++;
+      for (const obj of value.objects) {
+        const cleaned = cleanObject(obj, check);
+        if (!cleaned) bad++;
+        else {
+          bad += cleaned.bad;
+          objects.push(cleaned.obj);
+        }
       }
-      if (bad === 0) return { state: 'ok', items: good, activeId: typeof value.activeId === 'string' ? value.activeId : '' };
-      return { state: 'partial', items: good, bad };
+      if (!objects.length) return { state: 'invalid' };
+      const activeObjectId = typeof value.activeObjectId === 'string' ? value.activeObjectId : '';
+      const activeEstimateId = typeof value.activeEstimateId === 'string' ? value.activeEstimateId : '';
+      if (bad === 0) return { state: 'ok', objects, activeObjectId, activeEstimateId };
+      return { state: 'partial', objects, bad, activeObjectId, activeEstimateId };
     } catch (e) {
       return { state: 'invalid' };
     }
+  }
+
+  function isLibrary(v) {
+    return assessLibrary(v, validEstimate).state === 'ok';
   }
 
   function reserveDamaged(raw, slots) {
@@ -69,12 +154,78 @@
     return { blocked: true };
   }
 
-  function makeItem(estimate, id, now) {
-    const ts = now || new Date().toISOString();
-    return { id: id, created: ts, updated: ts, archived: false, estimate: estimate };
+  function clone(v) { return JSON.parse(JSON.stringify(v)); }
+
+  function makeEstimate(estimate, id, ts) {
+    return { id, created: ts, updated: ts, archived: false, rev: 0, dirty: false, syncConflict: false, estimate };
   }
 
-  function clone(v) { return JSON.parse(JSON.stringify(v)); }
+  function makeObject(card, estimates, id, ts) {
+    const c = card || {};
+    return {
+      id, created: ts, updated: ts, archived: false, rev: 0, dirty: false, syncConflict: false,
+      name: str(c.name), addr: str(c.addr), client: str(c.client),
+      phone: str(c.phone), email: str(c.email), note: str(c.note),
+      estimates
+    };
+  }
+
+  function findObject(lib, id) {
+    return (lib && lib.objects || []).find(o => o.id === id) || null;
+  }
+
+  function findEstimate(obj, id) {
+    return (obj && obj.estimates || []).find(e => e.id === id) || null;
+  }
+
+  function activePair(lib) {
+    const obj = findObject(lib, lib && lib.activeObjectId);
+    if (!obj) return null;
+    const est = findEstimate(obj, lib.activeEstimateId);
+    if (!est) return null;
+    return { obj, est };
+  }
+
+  function ensureActive(lib) {
+    const objects = lib.objects || [];
+    let obj = findObject(lib, lib.activeObjectId);
+    if (!obj) obj = objects.find(o => !o.archived) || objects[0] || null;
+    let est = obj && findEstimate(obj, lib.activeEstimateId);
+    if (!est && obj) est = obj.estimates.find(e => !e.archived) || obj.estimates[0] || null;
+    lib.activeObjectId = obj ? obj.id : '';
+    lib.activeEstimateId = est ? est.id : '';
+    return lib;
+  }
+
+  function stamp(obj, estimate) {
+    if (!estimate || typeof estimate !== 'object') return estimate;
+    estimate.objectName = obj.name || '';
+    estimate.addr = obj.addr || '';
+    estimate.client = obj.client || '';
+    if (!estimate.k || typeof estimate.k !== 'object' || Array.isArray(estimate.k)) estimate.k = {};
+    estimate.k.phone = obj.phone || '';
+    estimate.k.email = obj.email || '';
+    return estimate;
+  }
+
+  function pullCard(obj, estimate) {
+    if (!obj || !estimate) return obj;
+    obj.name = str(estimate.objectName);
+    obj.addr = str(estimate.addr);
+    obj.client = str(estimate.client);
+    const k = estimate.k;
+    if (k && typeof k === 'object' && !Array.isArray(k)) {
+      if (k.phone != null) obj.phone = String(k.phone);
+      if (k.email != null) obj.email = String(k.email);
+    }
+    return obj;
+  }
+
+  function blankLib(blank, idFactory, ts) {
+    const est = makeEstimate(clone(blank), idFactory(), ts);
+    const obj = makeObject({}, [est], idFactory(), ts);
+    return { v: 2, activeObjectId: obj.id, activeEstimateId: est.id, objects: [obj] };
+  }
 
   function planLoad(opts) {
     const blank = opts.blank;
@@ -104,49 +255,36 @@
         if (reserved.key) entry.key = reserved.key;
         writes.push(entry);
         warnings.push(assessment.state === 'partial'
-          ? 'В списке были неподходящие объекты. Полная запись сохранена отдельно, в работу взяты только целые сметы.'
-          : 'Список объектов повреждён. Полная запись сохранена отдельно, исходные байты не затёрты без копии.');
+          ? 'В списке были неподходящие объекты или сметы. Полная запись сохранена отдельно, в работу взяты только целые.'
+          : 'Запись списка не подошла или повреждена. Полная копия сохранена отдельно, исходные байты не затёрты без неё. Открыт новый пустой объект.');
       } else {
         warnings.push('Такая повреждённая запись уже сохранена отдельной копией и не перезаписывалась.');
       }
     }
 
     let lib = null;
-    if (usable) {
-      lib = { v: 1, activeId: assessment.activeId || '', items: assessment.items.map(clone) };
-    } else if (!blocked && assessment.state === 'partial' && assessment.items.length) {
-      lib = { v: 1, activeId: '', items: assessment.items.map(clone) };
+    if (usable || (!blocked && assessment.state === 'partial' && assessment.objects && assessment.objects.length)) {
+      lib = {
+        v: 2,
+        activeObjectId: assessment.activeObjectId || '',
+        activeEstimateId: assessment.activeEstimateId || '',
+        objects: assessment.objects.map(clone)
+      };
+      const prevO = lib.activeObjectId;
+      const prevE = lib.activeEstimateId;
+      ensureActive(lib);
+      if (usable && (lib.activeObjectId !== prevO || lib.activeEstimateId !== prevE)) writes.push({ slot: 'library', value: lib });
     }
     if (!lib) {
-      lib = { v: 1, activeId: '', items: [] };
+      lib = blankLib(blank, idFactory, now());
       const leg = safeParse(opts.legacyRaw);
-      if (leg.ok && check(leg.value)) {
-        const est = clone(leg.value);
-        if (!Array.isArray(est.price)) {
-          const price = safeParse(opts.priceRaw);
-          if (price.ok && Array.isArray(price.value) && price.value.length) est.price = clone(price.value);
-        }
-        const item = makeItem(est, idFactory(), now());
-        lib.items.push(item);
-        lib.activeId = item.id;
-        warnings.push('Подхвачена смета, которая уже была сохранена в этом браузере.');
-      } else if (leg.corrupt) {
-        warnings.push('Прежняя смета повреждена и не затёрта. Открыт пустой объект.');
+      if (leg.corrupt) {
+        warnings.push('Прежняя смета повреждена и не затёрта. Открыт новый пустой объект.');
         writes.push({ slot: 'legacyDamaged', value: opts.legacyRaw });
-      }
-      if (!lib.items.length) {
-        const item = makeItem(clone(blank), idFactory(), now());
-        lib.items.push(item);
-        lib.activeId = item.id;
       }
     }
     if (!usable && !blocked) writes.push({ slot: 'library', value: lib });
-    if (blocked) return { lib, writes, warnings, blocked: true, heldRaw };
-
-    if (!lib.activeId || !lib.items.some(i => i.id === lib.activeId)) {
-      const live = lib.items.find(i => !i.archived) || lib.items[0];
-      lib.activeId = live ? live.id : '';
-    }
+    if (blocked) return { lib: blankLib(blank, idFactory, now()), writes, warnings, blocked: true, heldRaw };
     return { lib, writes, warnings, blocked: false, heldRaw };
   }
 
@@ -174,110 +312,289 @@
     return { ok: true, done };
   }
 
-  function activeItem(lib) {
-    return (lib.items || []).find(i => i.id === lib.activeId) || null;
-  }
-
-  function capture(lib, estimate, now) {
-    const item = activeItem(lib);
-    if (!item) return lib;
-    item.estimate = estimate;
-    item.updated = now || new Date().toISOString();
+  function capture(lib, estimate, nowTs) {
+    const pair = activePair(lib);
+    if (!pair) return lib;
+    const prevEst = JSON.stringify(pair.est.estimate);
+    const prevCard = JSON.stringify([pair.obj.name, pair.obj.addr, pair.obj.client, pair.obj.phone, pair.obj.email, pair.obj.note]);
+    pair.est.estimate = estimate;
+    pullCard(pair.obj, estimate);
+    const nextCard = JSON.stringify([pair.obj.name, pair.obj.addr, pair.obj.client, pair.obj.phone, pair.obj.email, pair.obj.note]);
+    if (prevEst === JSON.stringify(estimate) && prevCard === nextCard) return lib;
+    const ts = nowTs || new Date().toISOString();
+    pair.est.updated = ts;
+    pair.est.dirty = true;
+    pair.obj.dirty = true;
+    pair.obj.updated = ts;
     return lib;
   }
 
-  function activate(lib, id) {
-    const item = (lib.items || []).find(i => i.id === id);
-    if (!item) return null;
-    item.estimate = clone(item.estimate);
-    lib.activeId = id;
-    return item.estimate;
+  function activateEstimate(lib, objectId, estimateId) {
+    const obj = findObject(lib, objectId);
+    const est = obj && findEstimate(obj, estimateId);
+    if (!est) return null;
+    est.estimate = clone(est.estimate);
+    stamp(obj, est.estimate);
+    lib.activeObjectId = objectId;
+    lib.activeEstimateId = estimateId;
+    return est.estimate;
   }
 
-  function addItem(lib, estimate, idFactory, now) {
-    const item = makeItem(clone(estimate), (idFactory || (() => 'obj_' + Math.random().toString(36).slice(2, 10)))(), (now || (() => new Date().toISOString()))());
-    lib.items.push(item);
-    lib.activeId = item.id;
-    return item;
+  function addObject(lib, card, estimate, idFactory, nowFn) {
+    const factory = idFactory || (() => 'obj_' + Math.random().toString(36).slice(2, 10));
+    const ts = (nowFn || (() => new Date().toISOString()))();
+    const est = makeEstimate(clone(estimate), factory(), ts);
+    est.dirty = true;
+    const obj = makeObject(card, [est], factory(), ts);
+    obj.dirty = true;
+    stamp(obj, est.estimate);
+    lib.objects.push(obj);
+    lib.activeObjectId = obj.id;
+    lib.activeEstimateId = est.id;
+    return obj;
   }
 
-  function duplicateItem(lib, id, idFactory, now) {
-    const src = (lib.items || []).find(i => i.id === id);
+  function addEstimate(lib, objectId, estimate, idFactory, nowFn) {
+    const obj = findObject(lib, objectId) || (lib.objects || []).find(o => !o.archived) || (lib.objects || [])[0];
+    if (!obj) return null;
+    const factory = idFactory || (() => 'obj_' + Math.random().toString(36).slice(2, 10));
+    const ts = (nowFn || (() => new Date().toISOString()))();
+    const est = makeEstimate(clone(estimate), factory(), ts);
+    est.dirty = true;
+    est.estimate.num = String((obj.estimates || []).length + 1);
+    stamp(obj, est.estimate);
+    obj.estimates.push(est);
+    obj.dirty = true;
+    obj.updated = ts;
+    lib.activeObjectId = obj.id;
+    lib.activeEstimateId = est.id;
+    return est;
+  }
+
+  function duplicateObject(lib, id, idFactory, nowFn) {
+    const src = findObject(lib, id);
     if (!src) return null;
-    const est = clone(src.estimate || {});
-    const base = est.objectName || est.addr || 'Смета';
-    est.objectName = base + ' (копия)';
-    const item = makeItem(est, (idFactory || (() => 'obj_' + Math.random().toString(36).slice(2, 10)))(), (now || (() => new Date().toISOString()))());
-    lib.items.push(item);
-    return item;
+    const factory = idFactory || (() => 'obj_' + Math.random().toString(36).slice(2, 10));
+    const ts = (nowFn || (() => new Date().toISOString()))();
+    const copy = clone(src);
+    copy.id = factory();
+    copy.created = ts;
+    copy.updated = ts;
+    copy.archived = false;
+    copy.rev = 0;
+    copy.dirty = true;
+    copy.syncConflict = false;
+    copy.name = (copy.name || copy.addr || 'Объект') + ' (копия)';
+    copy.estimates = (copy.estimates || []).map(e => {
+      e.id = factory();
+      e.created = ts;
+      e.updated = ts;
+      e.archived = false;
+      e.rev = 0;
+      e.dirty = true;
+      e.syncConflict = false;
+      if (e.estimate) e.estimate.objectName = copy.name;
+      return e;
+    });
+    lib.objects.push(copy);
+    return copy;
   }
 
-  function archiveItem(lib, id, blank, idFactory, now) {
-    const item = (lib.items || []).find(i => i.id === id);
-    if (!item) return null;
-    item.archived = true;
-    item.updated = (now || (() => new Date().toISOString()))();
-    if (lib.activeId === id) {
-      const next = lib.items.find(i => !i.archived);
-      if (next) return activate(lib, next.id);
-      const created = addItem(lib, blank, idFactory, now);
-      return created.estimate;
+  function duplicateEstimate(lib, objectId, estimateId, idFactory, nowFn) {
+    const obj = findObject(lib, objectId);
+    const src = obj && findEstimate(obj, estimateId);
+    if (!src) return null;
+    const factory = idFactory || (() => 'obj_' + Math.random().toString(36).slice(2, 10));
+    const ts = (nowFn || (() => new Date().toISOString()))();
+    const copy = clone(src);
+    copy.id = factory();
+    copy.created = ts;
+    copy.updated = ts;
+    copy.archived = false;
+    copy.rev = 0;
+    copy.dirty = true;
+    copy.syncConflict = false;
+    if (copy.estimate) copy.estimate.num = String(copy.estimate.num || '1') + '-копия';
+    obj.estimates.push(copy);
+    obj.dirty = true;
+    obj.updated = ts;
+    return copy;
+  }
+
+  function archiveObject(lib, id, blank, idFactory, nowFn) {
+    const obj = findObject(lib, id);
+    if (!obj) return null;
+    const ts = (nowFn || (() => new Date().toISOString()))();
+    obj.archived = true;
+    obj.dirty = true;
+    obj.updated = ts;
+    if (lib.activeObjectId !== id) return null;
+    const next = (lib.objects || []).find(o => !o.archived);
+    if (next) {
+      const est = next.estimates.find(e => !e.archived) || next.estimates[0];
+      return activateEstimate(lib, next.id, est.id);
     }
-    return null;
+    const created = addObject(lib, {}, blank, idFactory, nowFn);
+    return created.estimates[0].estimate;
   }
 
-  function restoreItem(lib, id, now) {
-    const item = (lib.items || []).find(i => i.id === id);
-    if (!item) return null;
-    item.archived = false;
-    item.updated = (now || (() => new Date().toISOString()))();
-    return item;
+  function restoreObject(lib, id, nowFn) {
+    const obj = findObject(lib, id);
+    if (!obj) return null;
+    obj.archived = false;
+    obj.dirty = true;
+    obj.updated = (nowFn || (() => new Date().toISOString()))();
+    return obj;
+  }
+
+  function archiveEstimate(lib, objectId, estimateId, blank, idFactory, nowFn) {
+    const obj = findObject(lib, objectId);
+    const est = obj && findEstimate(obj, estimateId);
+    if (!est) return null;
+    const ts = (nowFn || (() => new Date().toISOString()))();
+    est.archived = true;
+    est.dirty = true;
+    est.updated = ts;
+    obj.dirty = true;
+    obj.updated = ts;
+    if (lib.activeObjectId !== objectId || lib.activeEstimateId !== estimateId) return null;
+    const next = obj.estimates.find(e => !e.archived);
+    if (next) return activateEstimate(lib, objectId, next.id);
+    const created = addEstimate(lib, objectId, blank, idFactory, nowFn);
+    return created.estimate;
+  }
+
+  function restoreEstimate(lib, objectId, estimateId, nowFn) {
+    const obj = findObject(lib, objectId);
+    const est = obj && findEstimate(obj, estimateId);
+    if (!est) return null;
+    est.archived = false;
+    est.dirty = true;
+    est.updated = (nowFn || (() => new Date().toISOString()))();
+    obj.dirty = true;
+    obj.updated = est.updated;
+    return est;
+  }
+
+  function patchObject(lib, id, patch, nowFn) {
+    const obj = findObject(lib, id);
+    if (!obj || !patch) return null;
+    ['name', 'addr', 'client', 'phone', 'email', 'note'].forEach(key => {
+      if (Object.prototype.hasOwnProperty.call(patch, key)) obj[key] = String(patch[key] ?? '');
+    });
+    obj.dirty = true;
+    obj.updated = (nowFn || (() => new Date().toISOString()))();
+    (obj.estimates || []).forEach(est => {
+      stamp(obj, est.estimate);
+      est.dirty = true;
+      est.updated = obj.updated;
+    });
+    return obj;
+  }
+
+  function validObject(obj, check) {
+    const cleaned = cleanObject(obj, check || validEstimate);
+    return !!(cleaned && cleaned.bad === 0 && cleaned.obj);
   }
 
   function classifyImport(data, check) {
     const valid = check || validEstimate;
-    if (data && data.kind === 'smeta-library' && Array.isArray(data.items)) return { type: 'library', items: data.items.filter(i => i && valid(i.estimate)) };
-    if (isLibrary(data) && data.items.every(i => i && valid(i.estimate))) return { type: 'library', items: data.items };
-    if (valid(data)) return { type: 'estimate', items: [data] };
-    return { type: 'bad', items: [] };
+    if (data && data.kind === 'smeta-backup' && data.v === 2 && Array.isArray(data.objects)) {
+      if (!data.objects.length || !data.objects.every(o => validObject(o, valid))) return { type: 'bad', objects: [], items: [] };
+      return { type: 'backup', objects: data.objects, items: [] };
+    }
+    if (data && data.kind === 'smeta-library' && Array.isArray(data.items)) {
+      if (!data.items.length || !data.items.every(i => i && valid(i.estimate))) return { type: 'bad', objects: [], items: [] };
+      return { type: 'legacy-file', objects: [], items: data.items };
+    }
+    if (valid(data)) return { type: 'estimate', objects: [data], items: [] };
+    return { type: 'bad', objects: [], items: [] };
   }
 
-  function applyImport(lib, data, mode, check, idFactory, now) {
+  function applyImport(lib, data, mode, check, idFactory, nowFn) {
     const found = classifyImport(data, check);
     if (found.type === 'bad') return { ok: false, message: 'Файл не подходит' };
     const factory = idFactory || (() => 'obj_' + Math.random().toString(36).slice(2, 10));
-    const stamp = now || (() => new Date().toISOString());
-    const incoming = found.items.map(entry => {
-      const est = found.type === 'estimate' ? entry : entry.estimate;
-      const item = makeItem(clone(est), factory(), stamp());
-      if (found.type === 'library' && entry.archived) item.archived = true;
-      return item;
-    });
+    const stampFn = nowFn || (() => new Date().toISOString());
+    const ts = stampFn();
+    let incoming = [];
+    if (found.type === 'backup') {
+      incoming = found.objects.map(obj => {
+        const copy = clone(obj);
+        copy.id = factory();
+        copy.created = ts;
+        copy.updated = ts;
+        copy.rev = 0;
+        copy.dirty = true;
+        copy.syncConflict = false;
+        copy.estimates = (copy.estimates || []).map(e => {
+          e.id = factory();
+          e.created = ts;
+          e.updated = ts;
+          e.rev = 0;
+          e.dirty = true;
+          e.syncConflict = false;
+          return e;
+        });
+        return copy;
+      });
+    } else if (found.type === 'legacy-file') {
+      incoming = found.items.map(item => {
+        const est = clone(item.estimate);
+        const obj = makeObject({
+          name: str(est.objectName),
+          addr: str(est.addr),
+          client: str(est.client),
+          phone: est.k && est.k.phone ? String(est.k.phone) : '',
+          email: est.k && est.k.email ? String(est.k.email) : ''
+        }, [makeEstimate(est, factory(), ts)], factory(), ts);
+        obj.archived = item.archived === true;
+        return obj;
+      });
+    } else {
+      const est = clone(found.objects[0]);
+      incoming = [makeObject({
+        name: str(est.objectName), addr: str(est.addr), client: str(est.client),
+        phone: est.k && est.k.phone ? String(est.k.phone) : '',
+        email: est.k && est.k.email ? String(est.k.email) : ''
+      }, [makeEstimate(est, factory(), ts)], factory(), ts)];
+    }
     if (!incoming.length) return { ok: false, message: 'В файле нет смет' };
     if (mode === 'replace') {
-      lib.items = incoming;
-      const live = incoming.find(i => !i.archived) || incoming[0];
-      lib.activeId = live.id;
-      return { ok: true, estimate: activate(lib, live.id), added: incoming.length, replaced: true };
+      lib.objects = incoming;
+      lib.activeObjectId = '';
+      lib.activeEstimateId = '';
+      ensureActive(lib);
+      const pair = activePair(lib);
+      const estimate = pair ? activateEstimate(lib, pair.obj.id, pair.est.id) : null;
+      return { ok: true, estimate, added: incoming.length, replaced: true };
     }
-    const ids = new Set(lib.items.map(i => i.id));
-    incoming.forEach(item => { if (ids.has(item.id)) item.id = factory(); lib.items.push(item); });
+    incoming.forEach(obj => lib.objects.push(obj));
     return { ok: true, added: incoming.length, replaced: false };
   }
 
-  function queryItems(items, q) {
+  function bundle(lib) {
+    return { kind: 'smeta-backup', v: 2, objects: clone(lib.objects || []) };
+  }
+
+  function queryObjects(objects, q) {
     const s = String(q || '').trim().toLowerCase().replace(/ё/g, 'е');
-    if (!s) return items.slice();
-    return items.filter(item => {
-      const e = item.estimate || {};
-      const k = e.k || {};
-      const blob = [e.objectName, e.addr, e.client, e.num, e.date, k.fio].join(' ').toLowerCase().replace(/ё/g, 'е');
+    if (!s) return (objects || []).slice();
+    return (objects || []).filter(obj => {
+      const extra = (obj.estimates || []).map(e => {
+        const est = e.estimate || {};
+        return [est.num, est.date, est.objectName, est.client].join(' ');
+      });
+      const blob = [obj.name, obj.addr, obj.client, obj.phone, obj.email, obj.note].concat(extra).join(' ').toLowerCase().replace(/ё/g, 'е');
       return blob.includes(s);
     });
   }
 
   return {
-    safeParse, validEstimate, validItem, assessLibrary, isLibrary, reserveDamaged, makeItem, planLoad, applyWrites, activeItem, capture,
-    activate, addItem, duplicateItem, archiveItem, restoreItem, classifyImport, applyImport, queryItems, clone
+    safeParse, validEstimate, validId, validEstimateItem, validObject, assessLibrary, isLibrary, reserveDamaged,
+    makeEstimate, makeObject, planLoad, applyWrites, findObject, findEstimate, activePair, ensureActive,
+    stamp, pullCard, capture, activateEstimate, addObject, addEstimate, duplicateObject, duplicateEstimate,
+    archiveObject, restoreObject, archiveEstimate, restoreEstimate, patchObject, classifyImport, applyImport,
+    bundle, queryObjects, clone
   };
 });
