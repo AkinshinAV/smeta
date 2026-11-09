@@ -175,14 +175,13 @@ function noise(line) {
     if (!ranked.length || (query.length < 2 && ranked[0].score < 1)) return { confident: false, item: null, score: 0 };
     const best = ranked[0];
     const second = ranked[1] ? ranked[1].score : 0;
+    const sameName = norm(best.item.name).replace(/[«»"()]/g, '').replace(/\s+/g, '') === norm(name).replace(/[«»"()]/g, '').replace(/\s+/g, '');
     const unitOk = !unit || normUnit(best.item.unit) === unit;
-    const priceHits = ranked.filter(row => row.score >= 0.55 && row.item.price != null && Number(row.item.price) === Number(price) && (!unit || normUnit(row.item.unit) === unit));
-    if (price != null && priceHits.length === 1) {
-      return { confident: true, item: priceHits[0].item, score: Math.round(priceHits[0].score * 100) / 100 };
-    }
-    const confident = unitOk && (best.score === 1 || (best.score >= 0.75 && best.score - second >= 0.2 && query.some(t => t.length >= 4)));
-    const useful = confident || best.score >= 0.72;
-    return { confident, item: useful ? best.item : null, score: Math.round(best.score * 100) / 100 };
+    const priceHits = ranked.filter(row => row.score >= 0.75 && row.item.price != null && Number(row.item.price) === Number(price) && (!unit || normUnit(row.item.unit) === unit));
+    const confident = unitOk && (sameName || best.score === 1 || (best.score >= 0.75 && best.score - second >= 0.08) || priceHits.length === 1);
+    const useful = confident || best.score >= 0.55;
+    const picked = (priceHits.length === 1 && priceHits[0].score >= best.score - 0.05) ? priceHits[0] : best;
+    return { confident, item: useful ? picked.item : null, score: Math.round(picked.score * 100) / 100 };
   }
 
   function pageSignature(rows) {
