@@ -409,6 +409,8 @@ function setW(ri,wi,k,v){const w=S.rooms[ri].works[wi];w[k]=v;if(k==='qty')w.aut
 let _rn=0;function render(){if(_rn)return;_rn=1;try{_render()}finally{_rn=0}}
 function goTab(t){S.tab=t;save();render()}
 function addRoom(name,noDims){S.rooms.push({id:Date.now()+Math.random(),name:name||'Комната '+(S.rooms.length+1),L:'',W:'',H:'2.7',open:'',slopes:'',noDims:!!noDims,works:[]});S.tab=S.rooms.length-1;save();render()}
+function copyRoom(ri){const src=S.rooms[ri];if(!src)return;const copy=JSON.parse(JSON.stringify(src));copy.id=Date.now()+Math.random();copy.name=(src.name||'Помещение')+' (копия)';S.rooms.splice(ri+1,0,copy);S.tab=ri+1;save();render()}
+function setRoomKind(ri,name){const r=S.rooms[ri];if(!r||!name)return;r.name=name;if(name==='Электрика')r.noDims=true;save();render()}
 function _render(){
  ['addr','client','objectName','area','num','date','disc'].forEach(k=>{const e=document.getElementById('o_'+k);if(e&&document.activeElement!==e)e.value=S[k]??''});
  const dtEl=document.getElementById('docTitle');if(dtEl)dtEl.textContent='Смета №'+(S.num||'');
@@ -446,7 +448,10 @@ function _render(){
   return `<div class="catsec"><div class="sech" onclick="S.rooms[${ri}].openS['${sec}']=!S.rooms[${ri}].openS['${sec}'];save();render()">${S.rooms[ri].openS[sec]?'▾':'▸'} ${esc(sec)}${SP.includes(sec)?' <span class=muted>спецмонтаж</span>':''} <span class="cnt${n?' has':''}">${n}</span><span class="sum">${n?money(sum):''}</span></div>
    <div class="secbody" style="display:${r.openS[sec]?'block':'none'}" data-open="${r.openS[sec]?1:0}">${body}</div></div>`}).join('');
  const dims=r.noDims?'':`<div class="grid">${[['L','Длина, м'],['W','Ширина, м'],['H','Высота, м'],['floor','Площадь пола, м²'],['open','Проёмы, м²'],['slopes','Откосы, м/п']].map(([k,l])=>`<label>${l}<input type="text" inputmode="decimal" value="${esc(r[k]??'')}" placeholder="${k==='floor'?'авто':''}" data-r="${ri}" data-k="${k}" class="rin${r.bad&&r.bad[k]?' bad':''}"></label>`).join('')}</div>`;
- document.getElementById('rooms').innerHTML=`<div class="card"><div style="display:flex;gap:8px;align-items:center"><input value="${esc(r.name)}" data-r="${ri}" data-k="name" class="rin" style="font-weight:600;font-size:16px;max-width:300px">
+ const kinds=['Комната','Кухня','Ванная','Туалет','Коридор','Прихожая','Балкон','Электрика'];
+ document.getElementById('rooms').innerHTML=`<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input value="${esc(r.name)}" data-r="${ri}" data-k="name" class="rin" style="font-weight:600;font-size:16px;max-width:300px">
+  <select onchange="setRoomKind(${ri},this.value)"><option value="">Тип помещения</option>${kinds.map(n=>`<option ${r.name===n?'selected':''}>${esc(n)}</option>`).join('')}</select>
+  <button class="sec" onclick="copyRoom(${ri})">Копировать</button>
   <button class="del" onclick="if(confirm('Удалить помещение?')){S.rooms.splice(${ri},1);S.tab='p';save();render()}">Удалить</button></div>${dims}
   <div class="search"><input id="q" placeholder="Поиск по справочнику..." value="${esc(q)}" oninput="filterCat(this.value)"><span class="muted">галочка добавляет работу</span></div>
   ${secs}${roomWarns(r).map(w=>`<div class="warn">${esc(w)}</div>`).join('')}<div class="stats tot" id="rt${ri}"></div></div>`;
