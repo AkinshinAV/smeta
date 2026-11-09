@@ -99,6 +99,40 @@ test('черновик помечает каталог, сомнительные
   assert.ok(rooms[0].works.every(w => !String(w.name).includes('<')));
 });
 
+test('смета Remfy: запятая в тысячах, имя со второй строки и помещение без суммы', () => {
+  const cat = catalog.concat([
+    { i: 20, sec: 'Штукатурные работы', surf: 'Стены', name: 'Комплексная работа «Штукатурка гипсовой смесью до 2-х см»', unit: 'м2', price: 1825 },
+    { i: 30, sec: 'Плиточные работы', surf: 'Полы', name: 'Подрезка керамической плитки (пол)', unit: 'м/п', price: 535 },
+    { i: 31, sec: 'Плиточные работы', surf: 'Стены', name: 'Подрезка керамической плитки (стены)', unit: 'м/п', price: 693 }
+  ]);
+  const parsed = Pdf.parsePages([[
+    'Помещение',
+    'Комната',
+    'Комплексная работа "Штукатурка гипсовой смесью до 2-х см" (грунтовка)',
+    'Стены 1,825 р. 42.06 м2 76,760 р.',
+    'Полы Установка плинтусов пластиковых 301 р. 17 м/п 5,1 17 р.',
+    'Подрезка керамической плитки 535 р. 9.9 м/п 5,297 р.',
+    'Итого по помещению - Комната 234,634 р.',
+    'В том числе НДС 5% 11,173 р. 05 коп.'
+  ]], cat);
+  const plaster = parsed.rows.find(r => /штукатур/i.test(r.sourceName));
+  assert.ok(plaster);
+  assert.equal(plaster.price, 1825);
+  assert.equal(plaster.sum, 76760);
+  assert.equal(plaster.room, 'Комната');
+  assert.equal(plaster.confident, true);
+  const plinth = parsed.rows.find(r => r.sourceName.includes('плинтус'));
+  assert.equal(plinth.sum, 5117);
+  const cut = parsed.rows.find(r => r.sourceName.startsWith('Подрезка'));
+  assert.equal(cut.confident, true);
+  assert.equal(cut.catalog.name, 'Подрезка керамической плитки (пол)');
+  assert.ok(!parsed.rows.some(r => /ндс/i.test(r.sourceName)));
+  const water = Pdf.parseWorkLine('Установка точки водоснабжения (водорозетки) 1,1 1 1 р. 7 шт 7,777 р.');
+  assert.equal(water.price, 1111);
+  assert.equal(water.qty, 7);
+  assert.equal(water.sum, 7777);
+});
+
 test('сообщения про пустой, большой и отсутствующий PDF не обещают распознавание скана', () => {
   assert.match(Pdf.explainExtract('empty'), /нет текстового слоя/);
   assert.match(Pdf.explainExtract('empty'), /не делается/);

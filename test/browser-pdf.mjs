@@ -97,6 +97,9 @@ try {
     hidden: document.getElementById('pdfBox').hidden
   }));
   ok('новая смета не затирает прежнюю', after.estimates === before.estimates + 1 && after.firstWorks === 0 && after.rooms.some(r => r.name === 'Кухня' && r.works.includes('Снятие обоев') && !r.works.some(w => w.includes('Загадочная'))), JSON.stringify(after));
+  await page.evaluate(() => copyRoom(0));
+  const copied = await page.evaluate(() => S.rooms.map(r => ({ name: r.name, n: r.works.length })));
+  ok('помещение копируется вместе с позициями', copied.length === 2 && copied[1].name.includes('копия') && copied[1].n === copied[0].n, JSON.stringify(copied));
 
   await page.evaluate(() => { document.getElementById('pdfPaste').value = 'Укладка ламината с подложкой 962 р. 8 м2 7 696 р.'; parsePdfPaste(); });
   const pasted = await page.evaluate(() => pdfDraft.rows.map(r => r.name));

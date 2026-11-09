@@ -37,11 +37,23 @@
   }
 
   function numTok(s) {
-    const t = String(s ?? '').replace(/[\s\u00a0]/g, '').replace(',', '.');
+    let t = String(s ?? '').replace(/[\s\u00a0]/g, '');
+    if (/^\d{1,3}(,\d{3})+$/.test(t)) t = t.replace(/,/g, '');
+    else t = t.replace(',', '.');
     if (!/^\d+(\.\d+)?$/.test(t)) return null;
     const n = Number(t);
     return Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
   }
+
+  function repairSplitThousands(line) {
+  return String(line || '').replace(/(\d(?:,\d)?(?:\s+\d+){1,4})(?=\s*р\.?)/g, chunk => {
+    const compact = chunk.replace(/\s+/g, '');
+    if (/^\d{1,3}(,\d{3})+$/.test(compact)) return compact;
+    const digits = chunk.replace(/\D/g, '');
+    if (digits.length >= 3 && digits.length <= 7 && chunk.includes(',')) return digits;
+    return chunk;
+  });
+}
 
   function normUnit(s) {
     const u = norm(s).replace(/\s+/g, '');
@@ -102,7 +114,7 @@ function noise(line) {
   function roomFromTotal(line) {
     const m = norm(line).match(/^итого по помещению\s*[-–—]\s*(.+)$/);
     if (!m) return '';
-    const name = m[1].replace(/\s+\d[\d\s]*р\.?$/, '').trim();
+    const name = m[1].replace(/\s+\d[\d\s,]*(?:[.,]\d+)?\s*р\.?$/i, '').trim();
     return name ? name.charAt(0).toUpperCase() + name.slice(1) : '';
   }
 
@@ -120,13 +132,13 @@ function noise(line) {
 
   function splitSurf(name) {
     const parts = String(name || '').trim().split(/\s+/);
-    if (parts.length > 1 && SURF.has(norm(parts[0]))) return { surf: parts[0], name: parts.slice(1).join(' ') };
+    if (parts.length && SURF.has(norm(parts[0]))) return { surf: parts[0], name: parts.slice(1).join(' ') };
     return { surf: '', name: String(name || '').trim() };
   }
 
   function parseWorkLine(line) {
     if (noise(line)) return null;
-    const s = String(line).replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+    const s = repairSplitThousands(String(line).replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim());
     const re = /^(.+?)\s+(\d[\d ]*(?:[.,]\d+)?)\s*р\.?\s+(\d[\d ]*(?:[.,]\d+)?)\s*(м2|м²|кв\.?\s*м\.?|м\s*\/\s*п\.?|м\.п\.?|шт)\.?\s+(\d[\d ]*(?:[.,]\d+)?)?\s*р?\.?\s*$/i;
     const m = s.match(re);
     if (!m) return null;
@@ -135,16 +147,16 @@ function noise(line) {
     const unit = normUnit(m[4]);
     const sum = m[5] ? numTok(m[5]) : null;
     const split = splitSurf(m[1]);
-    if (!split.name || price == null || qty == null || !unit) return null;
+    if (price == null || qty == null || !unit) return null;
+    if (!split.name && !split.surf) return null;
     if (qty < 0 || price < 0 || qty > 100000 || price > 10000000) return null;
     return { name: split.name, surf: split.surf, price, qty, unit, sum };
   }
 
-  function matchCatalog(name, unit, catalog) {
+  function matchCatalog(name, unit, catalog, price) {
     const list = catalog || [];
     const query = sigTokens(name);
-    let best = null;
-    let second = 0;
+    const ranked = [];
     for (const item of list) {
       const same = norm(item.name) === norm(name);
       let score = 0;
@@ -157,13 +169,17 @@ function noise(line) {
         if (!hit) continue;
         score = hit / query.length * 0.7 + hit / theirs.length * 0.3;
       }
-      if (!best || score > best.score) {
-        second = best ? best.score : 0;
-        best = { item, score };
-      } else if (score > second) second = score;
+      if (score > 0) ranked.push({ item, score });
     }
-    if (!best) return { confident: false, item: null, score: 0 };
+    ranked.sort((a, b) => b.score - a.score);
+    if (!ranked.length || (query.length < 2 && ranked[0].score < 1)) return { confident: false, item: null, score: 0 };
+    const best = ranked[0];
+    const second = ranked[1] ? ranked[1].score : 0;
     const unitOk = !unit || normUnit(best.item.unit) === unit;
+    const priceHits = ranked.filter(row => row.score >= 0.55 && row.item.price != null && Number(row.item.price) === Number(price) && (!unit || normUnit(row.item.unit) === unit));
+    if (price != null && priceHits.length === 1) {
+      return { confident: true, item: priceHits[0].item, score: Math.round(priceHits[0].score * 100) / 100 };
+    }
     const confident = unitOk && (best.score === 1 || (best.score >= 0.75 && best.score - second >= 0.2 && query.some(t => t.length >= 4)));
     const useful = confident || best.score >= 0.72;
     return { confident, item: useful ? best.item : null, score: Math.round(best.score * 100) / 100 };
@@ -191,29 +207,34 @@ function noise(line) {
       let room = '';
       let pendingRoom = false;
       let section = '';
+      let prevTitle = '';
       const pageRows = [];
       for (const raw of lines) {
-        const line = repairSpacedLetters(String(raw || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim());
+        const line = repairSplitThousands(repairSpacedLetters(String(raw || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim()));
         if (!line) continue;
-        if (norm(line) === 'помещение') { pendingRoom = true; continue; }
+        if (norm(line) === 'помещение') { pendingRoom = true; prevTitle = ''; continue; }
         const totalRoom = roomFromTotal(line);
         if (totalRoom) {
           room = totalRoom;
           pageRows.forEach(r => { if (!r.room) r.room = room; });
+          prevTitle = '';
           continue;
         }
-        const sec = sectionOf(line, sections);
-        if (sec) { section = sec; pendingRoom = false; continue; }
-        const work = parseWorkLine(line);
+        let work = parseWorkLine(line);
+        if (work && !work.name && prevTitle) work.name = prevTitle;
+        if (work && !work.name) work = null;
         if (!work) {
+          const sec = sectionOf(line, sections);
+          if (sec) { section = sec; pendingRoom = false; prevTitle = ''; continue; }
           if (pendingRoom && !noise(line) && line.length <= 40 && !/\d/.test(line)) {
             room = line.charAt(0).toUpperCase() + line.slice(1);
             pendingRoom = false;
-          }
+          } else if (!noise(line) && line.length >= 12) prevTitle = line;
           continue;
         }
         pendingRoom = false;
-        const found = matchCatalog(work.name, work.unit, catalog);
+        prevTitle = '';
+        const found = matchCatalog(work.name, work.unit, catalog, work.price);
         pageRows.push({
           room: room,
           section: section,
