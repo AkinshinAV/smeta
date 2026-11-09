@@ -43,28 +43,35 @@ try {
     price: localStorage.getItem('smeta_price'),
     lib: localStorage.getItem('smeta_v1_library') ? 1 : 0
   }));
-  ok('корень подхватил smeta_v1', rootMig.addr === 'Старый адрес' && rootMig.client === 'Старый заказчик', JSON.stringify(rootMig));
-  ok('корень не стёр smeta_v1 и сделал backup', rootMig.v1 === JSON.stringify(legacy) && rootMig.backup === JSON.stringify(legacy) && rootMig.price === '[{"name":"x","p":1}]' && rootMig.lib === 1);
+  ok('старая смета не стёрта и не подмешана в новый список', rootMig.v1 === JSON.stringify(legacy) && rootMig.backup === JSON.stringify(legacy) && rootMig.price === '[{"name":"x","p":1}]' && rootMig.lib === 1 && rootMig.client === '' && rootMig.addr === '', JSON.stringify(rootMig));
 
   await page.evaluate(() => {
     S.objectName = 'Объект A'; S.client = 'Альфа'; S.addr = 'Адрес А';
     S.rooms = [{ name: 'Комната', L: '2', W: '3', H: '2.5', open: '', slopes: '', works: [{ sec: 'Малярные работы', name: 'А', price: 100, qty: 2 }] }];
     save();
-    newObj();
+    const second = SmetaLib.addEstimate(LIB, LIB.activeObjectId, blank());
+    adopt(second.estimate);
+    S.num = '2';
+    S.rooms = [{ name: 'Комната', works: [{ sec: 'Малярные работы', name: 'А2', price: 10, qty: 1 }] }];
+    save();
+    const obj = SmetaLib.addObject(LIB, { name: 'Объект B', client: 'Бета', addr: 'Адрес Б' }, blank());
+    adopt(obj.estimates[0].estimate);
     S.objectName = 'Объект B'; S.client = 'Бета'; S.addr = 'Адрес Б';
     S.rooms = [{ name: 'Комната', works: [{ sec: 'Малярные работы', name: 'Б', price: 50, qty: 1 }] }];
     save();
-    newObj();
-    S.objectName = 'Объект C'; S.client = 'Гамма'; S.addr = 'Адрес В';
-    S.rooms = [{ name: 'Комната', works: [{ sec: 'Малярные работы', name: 'В', price: 7, qty: 3 }] }];
+    const extra = SmetaLib.addEstimate(LIB, LIB.activeObjectId, blank());
+    adopt(extra.estimate);
+    S.rooms = [{ name: 'Комната', works: [{ sec: 'Малярные работы', name: 'Б2', price: 7, qty: 3 }] }];
     save();
   });
   await page.reload({ waitUntil: 'networkidle0' });
-  const afterReload = await page.evaluate(() => document.getElementById('o_client').value);
-  ok('после перезагрузки открыт последний объект', afterReload === 'Гамма', afterReload);
+  const afterReload = await page.evaluate(() => ({ client: document.getElementById('o_client').value, counts: LIB.objects.map(o => o.estimates.length) }));
+  ok('после перезагрузки открыта последняя смета и оба объекта на месте', afterReload.client === 'Бета' && afterReload.counts.length === 2 && afterReload.counts.every(n => n === 2), JSON.stringify(afterReload));
   await page.evaluate(() => showLib());
   await page.screenshot({ path: path.join(outDir, 'objects-list.png') });
-  await page.evaluate(() => openObj(LIB.items.find(i => i.estimate.client === 'Альфа').id));
+  const statusText = await page.$eval('#saveState', el => el.textContent);
+  ok('без сервера нет ложной надписи о сохранении на сервере', statusText.includes('этом устройстве') && !statusText.includes('Сохранено на сервере'), statusText);
+  await page.evaluate(() => { const obj = LIB.objects.find(o => o.client === 'Альфа'); openEst(obj.id, obj.estimates[0].id); });
   const backA = await page.evaluate(() => ({ client: S.client, sum: estSum(S), name: S.objectName }));
   ok('возврат к A сохраняет заказчика и сумму', backA.client === 'Альфа' && backA.sum === 200, JSON.stringify(backA));
   await page.screenshot({ path: path.join(outDir, 'object-card.png') });

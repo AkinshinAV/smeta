@@ -12,70 +12,111 @@ function est(name, client, sumPrice) {
   return { objectName: name, addr: name, client, num: '1', date: '2026-11-07', disc: 0, rooms: [{ name: 'Комната', works: [{ sec: 'Малярные работы', name: 'Работа', price: sumPrice, qty: 1 }] }], usePriceList: false };
 }
 
-test('миграция подхватывает старую смету и не стирает исходную запись', () => {
+test('пустой запуск не подмешивает старую смету и не стирает её байты', () => {
+  n = 0;
   const legacy = JSON.stringify(est('Старая', 'Иван', 10));
   const plan = Lib.planLoad({ legacyRaw: legacy, priceRaw: '[{"p":1}]', coRaw: '{"city":"Москва"}', blank, idFactory: ids, now });
-  assert.equal(plan.lib.items.length, 1);
-  assert.equal(plan.lib.items[0].estimate.client, 'Иван');
-  assert.equal(plan.lib.items[0].estimate.price[0].p, 1);
+  assert.equal(plan.lib.v, 2);
+  assert.equal(plan.lib.objects.length, 1);
+  assert.equal(plan.lib.objects[0].estimates.length, 1);
+  assert.equal(plan.lib.objects[0].client, '');
+  assert.equal(JSON.stringify(plan.lib).includes('Иван'), false);
   assert.ok(plan.writes.some(w => w.slot === 'legacyBackup' && w.value === legacy));
   assert.ok(!plan.writes.some(w => w.slot === 'legacy'));
   const again = Lib.planLoad({ libRaw: JSON.stringify(plan.lib), legacyRaw: legacy, backupRaw: legacy, blank, idFactory: ids, now });
-  assert.equal(again.lib.items.length, 1);
+  assert.equal(again.lib.objects.length, 1);
   assert.equal(again.writes.length, 0);
 });
 
 test('повреждённый архив и пустое хранилище не затирают прежние байты', () => {
   const broken = '{';
   const plan = Lib.planLoad({ libRaw: broken, legacyRaw: null, blank, idFactory: ids, now });
-  assert.equal(plan.lib.items[0].estimate.client, '');
+  assert.equal(plan.lib.objects[0].client, '');
   assert.equal(plan.writes.find(w => w.slot === 'libDamaged').value, broken);
   const legacyBroken = Lib.planLoad({ legacyRaw: '{bad', blank, idFactory: ids, now });
   assert.equal(legacyBroken.writes.find(w => w.slot === 'legacyDamaged').value, '{bad');
-  assert.equal(legacyBroken.lib.items.length, 1);
+  assert.equal(legacyBroken.lib.objects.length, 1);
 });
 
-test('три объекта изолированы, импорт без спроса не заменяет список', () => {
-  n = 0;
-  const plan = Lib.planLoad({ blank, idFactory: ids, now });
-  const lib = plan.lib;
-  lib.items[0].estimate = est('A', 'Альфа', 100);
-  const b = Lib.addItem(lib, est('B', 'Бета', 200), ids, now);
-  const c = Lib.addItem(lib, est('C', 'Гамма', 300), ids, now);
-  assert.equal(lib.activeId, c.id);
-  const back = Lib.activate(lib, lib.items[0].id);
-  assert.equal(back.client, 'Альфа');
-  assert.equal(lib.items[1].estimate.client, 'Бета');
-  assert.equal(lib.items[2].estimate.client, 'Гамма');
-  const before = lib.items.length;
-  const added = Lib.applyImport(lib, est('D', 'Дельта', 1), 'add', Lib.validEstimate, ids, now);
-  assert.equal(added.replaced, false);
-  assert.equal(lib.items.length, before + 1);
-  assert.equal(lib.items[0].estimate.client, 'Альфа');
-  const replaced = Lib.applyImport(lib, { kind: 'smeta-library', v: 1, items: [{ estimate: est('Z', 'Зет', 5) }] }, 'replace', Lib.validEstimate, ids, now);
-  assert.equal(replaced.replaced, true);
-  assert.equal(lib.items.length, 1);
-  assert.equal(replaced.estimate.client, 'Зет');
+test('старая схема v1 сохраняется побайтно и не открывается как живой список', () => {
+  const raw = JSON.stringify({ v: 1, items: [{ id: 'ok', estimate: est('Секрет', 'Иван', 10) }], valuableData: 'SECRET-V1' });
+  const plan = Lib.planLoad({ libRaw: raw, legacyRaw: null, blank, idFactory: ids, now });
+  const copy = plan.writes.find(w => w.slot === 'libDamaged');
+  const replaced = plan.writes.find(w => w.slot === 'library');
+  assert.equal(copy.value, raw);
+  assert.ok(plan.writes.indexOf(copy) < plan.writes.indexOf(replaced));
+  assert.equal(JSON.parse(copy.value).valuableData, 'SECRET-V1');
+  assert.equal(JSON.stringify(plan.lib).includes('SECRET-V1'), false);
+  assert.equal(JSON.stringify(plan.lib).includes('Иван'), false);
 });
 
-test('архив обратим, дубль не стирает источник', () => {
+test('два объекта по две сметы: открытие, переименование, копия, архив и возврат', () => {
   n = 0;
   const { lib } = Lib.planLoad({ blank, idFactory: ids, now });
-  lib.items[0].estimate = est('A', 'Альфа', 1);
-  const copy = Lib.duplicateItem(lib, lib.items[0].id, ids, now);
-  assert.equal(copy.estimate.client, 'Альфа');
-  assert.match(copy.estimate.objectName, /копия/);
-  assert.equal(lib.items.length, 2);
-  const next = Lib.archiveItem(lib, lib.items[0].id, blank, ids, now);
-  assert.equal(lib.items[0].archived, true);
-  assert.equal(next.client, 'Альфа');
-  Lib.restoreItem(lib, lib.items[0].id, now);
-  assert.equal(lib.items[0].archived, false);
+  lib.objects[0].name = 'Объект A';
+  lib.objects[0].client = 'Альфа';
+  lib.objects[0].estimates[0].estimate = est('Объект A', 'Альфа', 100);
+  const a2 = Lib.addEstimate(lib, lib.objects[0].id, est('Объект A', 'Альфа', 50), ids, now);
+  const b = Lib.addObject(lib, { name: 'Объект B', client: 'Бета', addr: 'Адрес Б' }, est('Объект B', 'Бета', 7), ids, now);
+  Lib.addEstimate(lib, b.id, est('Объект B', 'Бета', 9), ids, now);
+  assert.equal(lib.objects.length, 2);
+  assert.equal(lib.objects[0].estimates.length, 2);
+  assert.equal(lib.objects[1].estimates.length, 2);
+  const opened = Lib.activateEstimate(lib, lib.objects[0].id, lib.objects[0].estimates[0].id);
+  assert.equal(opened.client, 'Альфа');
+  assert.equal(Lib.activePair(lib).est.id, lib.objects[0].estimates[0].id);
+  Lib.patchObject(lib, b.id, { name: 'Объект B2', client: 'Бета-2' }, now);
+  assert.equal(b.name, 'Объект B2');
+  assert.equal(b.estimates[1].estimate.client, 'Бета-2');
+  const copy = Lib.duplicateObject(lib, lib.objects[0].id, ids, now);
+  assert.equal(copy.estimates.length, 2);
+  assert.match(copy.name, /копия/);
+  assert.notEqual(copy.id, lib.objects[0].id);
+  assert.equal(lib.objects[0].client, 'Альфа');
+  const estCopy = Lib.duplicateEstimate(lib, b.id, b.estimates[0].id, ids, now);
+  assert.equal(b.estimates.length, 3);
+  assert.match(estCopy.estimate.num, /копия/);
+  Lib.activateEstimate(lib, lib.objects[0].id, lib.objects[0].estimates[0].id);
+  const next = Lib.archiveObject(lib, lib.objects[0].id, blank, ids, now);
+  assert.equal(lib.objects[0].archived, true);
+  assert.equal(next.client, 'Бета-2');
+  Lib.restoreObject(lib, lib.objects[0].id, now);
+  assert.equal(lib.objects[0].archived, false);
+  const archivedEst = Lib.archiveEstimate(lib, b.id, b.estimates[0].id, blank, ids, now);
+  assert.equal(b.estimates[0].archived, true);
+  assert.ok(archivedEst);
+  Lib.restoreEstimate(lib, b.id, b.estimates[0].id, now);
+  assert.equal(b.estimates[0].archived, false);
+});
+
+test('импорт roundtrip и повреждённый файл не меняют список', () => {
+  n = 0;
+  const { lib } = Lib.planLoad({ blank, idFactory: ids, now });
+  lib.objects[0].name = 'Дом';
+  lib.objects[0].estimates[0].estimate = est('Дом', 'Анна', 15);
+  const file = Lib.bundle(lib);
+  const again = Lib.planLoad({ blank, idFactory: ids, now }).lib;
+  const before = JSON.stringify(again);
+  const bad = Lib.applyImport(again, { kind: 'smeta-backup', v: 2, objects: [{ id: 'bad', estimates: [] }] }, 'replace', Lib.validEstimate, ids, now);
+  assert.equal(bad.ok, false);
+  assert.equal(JSON.stringify(again), before);
+  const added = Lib.applyImport(again, file, 'add', Lib.validEstimate, ids, now);
+  assert.equal(added.replaced, false);
+  assert.equal(again.objects.length, 2);
+  assert.equal(again.objects[1].name, 'Дом');
+  assert.equal(again.objects[1].estimates[0].estimate.client, 'Анна');
+  const replaced = Lib.applyImport(again, est('Новый', 'Борис', 3), 'replace', Lib.validEstimate, ids, now);
+  assert.equal(replaced.replaced, true);
+  assert.equal(again.objects.length, 1);
+  assert.equal(replaced.estimate.client, 'Борис');
+  const round = Lib.planLoad({ libRaw: JSON.stringify(again), blank, idFactory: ids, now });
+  assert.equal(round.writes.length, 0);
+  assert.equal(round.lib.objects[0].client, 'Борис');
 });
 
 test('ошибка квоты останавливает запись и не притворяется успехом', () => {
   const storage = { setItem() { const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; } };
-  const res = Lib.applyWrites(storage, { library: 'smeta_v1_library' }, [{ slot: 'library', value: { v: 1, items: [] } }]);
+  const res = Lib.applyWrites(storage, { library: 'smeta_v1_library' }, [{ slot: 'library', value: { v: 2, objects: [] } }]);
   assert.equal(res.ok, false);
   assert.equal(res.quota, true);
 });
@@ -95,18 +136,30 @@ test('null, строка и битые элементы не использую�
   const cases = [
     JSON.stringify({ items: null, valuableData: 'N' }),
     JSON.stringify({ items: 'broken', valuableData: 'S' }),
-    JSON.stringify({ items: [null, 1, { id: 'bad id', estimate: est('X', 'Икс', 1) }], valuableData: 'E' }),
-    JSON.stringify({ items: [{ id: 'ok', estimate: { rooms: 'нет' } }, { id: 'good', estimate: est('Целая', 'Цел', 4) }], valuableData: 'P' })
+    JSON.stringify({ v: 2, objects: [null, { id: 'bad id', estimates: [] }] })
   ];
   for (const raw of cases) {
     const plan = Lib.planLoad({ libRaw: raw, legacyRaw: null, blank, idFactory: ids, now });
     assert.equal(plan.writes.find(w => w.slot === 'libDamaged').value, raw);
     assert.equal(plan.blocked, false);
-    assert.ok(plan.lib.items.every(item => Lib.validEstimate(item.estimate)));
+    assert.ok(plan.lib.objects.every(obj => obj.estimates.every(item => Lib.validEstimate(item.estimate))));
   }
-  const partial = Lib.planLoad({ libRaw: cases[3], legacyRaw: null, blank, idFactory: ids, now });
-  assert.equal(partial.lib.items.length, 1);
-  assert.equal(partial.lib.items[0].estimate.client, 'Цел');
+});
+
+test('частично целая схема v2 берёт только целые сметы и хранит полный оригинал', () => {
+  const raw = JSON.stringify({
+    v: 2,
+    objects: [
+      { id: 'obj1', name: 'Целый', estimates: [{ id: 'est1', estimate: est('Целый', 'Цел', 4) }, { id: 'bad', estimate: { rooms: 'нет' } }] },
+      { id: 'gone', estimates: [{ id: 'nope', estimate: null }] }
+    ]
+  });
+  const plan = Lib.planLoad({ libRaw: raw, legacyRaw: null, blank, idFactory: ids, now });
+  assert.equal(plan.writes.find(w => w.slot === 'libDamaged').value, raw);
+  assert.equal(plan.lib.objects.length, 1);
+  assert.equal(plan.lib.objects[0].name, 'Целый');
+  assert.equal(plan.lib.objects[0].estimates.length, 1);
+  assert.equal(plan.lib.objects[0].estimates[0].estimate.client, 'Цел');
 });
 
 test('отказ копии не перезаписывает исходную, повтор не затирает чужие копии', () => {
@@ -122,7 +175,7 @@ test('отказ копии не перезаписывает исходную, 
     data: { smeta_v1_library: first, smeta_v1_library_damaged: 'KEEP-OTHER' },
     setItem(k, v) { if (k.endsWith('_damaged')) { const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; } this.data[k] = v; }
   };
-  const failing = Lib.applyWrites(storage, { library: 'smeta_v1_library', libDamaged: 'smeta_v1_library_damaged' }, blocked.writes.concat([{ slot: 'libDamaged', value: first }, { slot: 'library', value: { v: 1, items: [] } }]));
+  const failing = Lib.applyWrites(storage, { library: 'smeta_v1_library', libDamaged: 'smeta_v1_library_damaged' }, blocked.writes.concat([{ slot: 'libDamaged', value: first }, { slot: 'library', value: { v: 2, objects: [] } }]));
   assert.equal(failing.ok, false);
   assert.equal(storage.data.smeta_v1_library, first);
   const nextSlots = [
@@ -155,11 +208,11 @@ test('preview использует ту же защиту структуры', (
   assert.equal(free.writes.find(w => w.slot === 'libDamaged').value, raw);
 });
 
-test('поиск находит заказчика и не смешивает чужие поля', () => {
-  const items = [
-    { id: '1', estimate: est('Кухня', 'Альфа', 1) },
-    { id: '2', estimate: est('Ванная', 'Бета', 1) }
+test('поиск находит заказчика объекта и не смешивает чужие поля', () => {
+  const objects = [
+    { id: '1', name: 'Кухня', client: 'Альфа', addr: '', phone: '', email: '', note: '', estimates: [] },
+    { id: '2', name: 'Ванная', client: 'Бета', addr: '', phone: '', email: '', note: '', estimates: [] }
   ];
-  assert.deepEqual(Lib.queryItems(items, 'бета').map(i => i.id), ['2']);
-  assert.equal(Lib.queryItems(items, '').length, 2);
+  assert.deepEqual(Lib.queryObjects(objects, 'бета').map(i => i.id), ['2']);
+  assert.equal(Lib.queryObjects(objects, '').length, 2);
 });
