@@ -211,20 +211,26 @@ export function start(opts = {}) {
     return String(req.socket.remoteAddress || 'local');
   }
 
-  function tooMany(req) {
-    const row = failures.get(clientKey(req));
+  function loginKey(req, username) {
+    const name = String(username || '').trim().toLowerCase();
+    if (/^[a-z0-9._-]{1,32}$/.test(name)) return 'user:' + name;
+    return 'ip:' + clientKey(req);
+  }
+
+  function tooMany(req, username) {
+    const row = failures.get(loginKey(req, username));
     return !!(row && row.count >= 8 && Date.now() < row.reset);
   }
 
-  function failLogin(req) {
-    const key = clientKey(req);
+  function failLogin(req, username) {
+    const key = loginKey(req, username);
     const row = failures.get(key);
     const now = Date.now();
     if (!row || now > row.reset) failures.set(key, { count: 1, reset: now + 15 * 60 * 1000 });
     else row.count += 1;
   }
 
-  function clearLogin(req) { failures.delete(clientKey(req)); }
+  function clearLogin(req, username) { failures.delete(loginKey(req, username)); }
 
   function authUser(req) {
     const header = String(req.headers.authorization || '');
@@ -267,18 +273,19 @@ export function start(opts = {}) {
       return;
     }
     if (req.method === 'POST' && url.pathname === '/api/login') {
-      if (tooMany(req)) return send(req, res, 429, { error: 'Слишком много попыток. Подождите 15 минут.' });
       const body = await readBody(req);
       const username = body && typeof body.username === 'string' ? body.username.trim() : '';
       const password = body && typeof body.password === 'string' ? body.password : '';
+      if (tooMany(req, username)) return send(req, res, 429, { error: 'Слишком много попыток для этого логина. Подождите 15 минут.' });
+      db.prepare('DELETE FROM tokens WHERE expires_at < ?').run(new Date().toISOString());
       const row = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
       const hash = row ? row.password_hash : dummyHash;
       const match = verifyPassword(password, hash) && !!row;
       if (!match) {
-        failLogin(req);
+        failLogin(req, username);
         return send(req, res, 401, { error: 'Неверный логин или пароль' });
       }
-      clearLogin(req);
+      clearLogin(req, username);
       const token = crypto.randomBytes(32).toString('base64url');
       const expires = new Date(Date.now() + TOKEN_DAYS * 86400000).toISOString();
       db.prepare('INSERT INTO tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)').run(tokenHash(token), row.id, expires);
