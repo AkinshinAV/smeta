@@ -59,10 +59,12 @@ try {
     r.works.push({ sec: 'Электромонтажные работы', surf: 'Чистовые электромонтажные', name: 'Установка механизмов розеток, выключателей, диммера', unit: 'шт', price: '451,5', qty: '2,5', auto: false });
     save(); render();
   });
-  const geoText = await page.$eval('#dims', el => el.innerText);
+  const geoText = await page.$eval('#measure', el => el.innerText);
   ok('пол 18.97', geoText.includes('18.97'), geoText);
   ok('стены 42.06', geoText.includes('42.06'), geoText);
   ok('периметр 17.92', geoText.includes('17.92'), geoText);
+  const strip = await page.evaluate(() => { const back = S.tab; S.tab = 0; render(); const text = document.getElementById('dims').innerText; S.tab = back; render(); return text; });
+  ok('на вкладке комнаты те же размеры', strip.includes('18.97') && strip.includes('42.06') && strip.includes('17.92'), strip);
   const sum = await page.$eval('#sum_td', el => el.textContent);
   ok('скидка не трогает спецмонтаж', sum.includes('4') || true, sum);
   const totals = await page.evaluate(() => {
