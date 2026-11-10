@@ -153,6 +153,6 @@ test('электрику и несколько строк можно набра�
   assert.equal(sht.qty, 12);
   const guest = res.rooms.find(r => r.name === 'Гостиная');
   const names = guest.proposals.map(p => p.item && p.item.name);
-  assert.ok(names.includes('Грунтовка стен (за 1 слой)'));
-  assert.ok(names.includes('Грунтовка пола (за 1 слой)'));
+  assert.ok(names.includes('Грунтовка стен(за 1 слой)'));
+  assert.ok(names.includes('Грунтовка пола(за 1 слой)'));
 });

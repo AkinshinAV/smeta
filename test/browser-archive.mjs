@@ -119,7 +119,7 @@ try {
     client: document.getElementById('o_client').value,
     v1: localStorage.getItem('smeta_v1'),
     banner: document.querySelector('.preview-banner')?.innerText || '',
-    bath: catP(CAT.findIndex(c => c[2] === 'Грунтовка пола (за 1 слой)'), 'Ванная')
+    bath: catP(CAT.findIndex(c => c[2] === 'Грунтовка пола(за 1 слой)'), 'Ванная')
   }));
   ok('preview читает только v2', prev.client === 'Только v2' && prev.v1 === JSON.stringify(legacy), JSON.stringify(prev));
   ok('preview сохранил свою цену ванной', prev.bath === 99, String(prev.bath));
@@ -177,7 +177,7 @@ try {
   ok('preview не затирает битую библиотеку', await guardLibrary(`http://127.0.0.1:${port}/preview-v2/index.html`, 'smeta_v2_library'));
 
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'networkidle0' });
-  const rootPrice = await page.evaluate(() => catP(CAT.findIndex(c => c[2] === 'Грунтовка пола (за 1 слой)')));
+  const rootPrice = await page.evaluate(() => catP(CAT.findIndex(c => c[2] === 'Грунтовка пола(за 1 слой)')));
   ok('корень не получил цену ванной из preview', rootPrice === 79, String(rootPrice));
   ok('страницы без исключений', errors.length === 0, errors.join(' | '));
 
