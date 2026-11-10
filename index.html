@@ -194,7 +194,7 @@ body.lib-open #libView{display:block}
 <button type="button" class="sec" onclick="closePrintPreview()">Закрыть просмотр</button>
 </div>
 <div class="topbar">
-<div class="tb-brand"><div class="tb-title"><h1 id="docTitle">Смета ремонта</h1><span id="buildTag">сборка 20261110c</span></div>
+<div class="tb-brand"><div class="tb-title"><h1 id="docTitle">Смета ремонта</h1><span id="buildTag">сборка 20261110d</span></div>
 <span id="saveState" class="saveok">Сохранено в этом браузере</span></div>
 <div class="tb-actions">
 <button type="button" onclick="showLib()" class="ghost">Объекты</button>
@@ -231,7 +231,7 @@ body.lib-open #libView{display:block}
 </div>
 <div id="panel-obj"><div class="card"><h3 style="margin-top:0">Объект</h3><div class="grid">
 <label>Название объекта<input id="o_objectName" placeholder="как найти через неделю"></label><label>Адрес<input id="o_addr"></label><label>Заказчик<input id="o_client"></label><label>Площадь объекта, м² (если пусто — сумма полов)<input id="o_area" type="text" inputmode="decimal"></label>
-<label>№ сметы<input id="o_num"></label><label>Дата<input id="o_date" type="date"></label><label>Скидка, %<input id="o_disc" type="text" inputmode="decimal"></label></div></div>
+<label>№ сметы<input id="o_num"></label><label>Дата<input id="o_date" type="date"></label><label>Скидка, %<input id="o_disc" type="text" inputmode="decimal"></label><label>Коэф. цен<input id="o_coef" type="text" inputmode="decimal" placeholder="1"></label></div></div>
 
 <div class="card kd"><details id="kdDet"><summary style="font-weight:600;font-size:16px;cursor:pointer">Данные для договора</summary><div class="grid">
 <label>ФИО заказчика полностью<input data-k="fio"></label><label>Паспорт: серия и номер<input data-k="pser"></label><label>Кем выдан<input data-k="pby"></label>
@@ -254,11 +254,11 @@ body.lib-open #libView{display:block}
 <div id="panel-price" style="display:none"></div>
 <p class="muted">Цены в каталоге взяты из образцов смет Remfy (14.10.2026 и 17.10.2026). Позиции без цены нужно заполнить вручную. Данные сохраняются в этом браузере автоматически. Подбор по описанию сравнивает фразу только с этим каталогом.</p>
 </main><div id="print"></div>
-<script src="library.js?v=20261110c"></script>
-<script src="sync.js?v=20261110c"></script>
-<script src="pdf-import.js?v=20261110c"></script>
-<script src="smeta-calc.js?v=20261110c"></script>
-<script src="assist.js?v=20261110c"></script>
+<script src="library.js?v=20261110d"></script>
+<script src="sync.js?v=20261110d"></script>
+<script src="pdf-import.js?v=20261110d"></script>
+<script src="smeta-calc.js?v=20261110d"></script>
+<script src="assist.js?v=20261110d"></script>
 <script>
 // [раздел, поверхность, название, ед., цена, база количества]  база: floor|walls|perim|slopes|ceil|manual ; null цена = ввести вручную
 const SP=['Электромонтажные работы','Сантехнические работы'];
@@ -383,7 +383,7 @@ function normN(s){return String(s||'').toLowerCase().replace(/ё/g,'е').replace
 function findPrice(name,surf,sec){const list=getPrice(),nn=normN(name),sf=normN(surf),sc=normN(sec);let hit=list.find(it=>normN(it.name)===nn&&(!sf||normN(it.u)===sf)&&(!sc||normN(it.s)===sc));if(!hit)hit=list.find(it=>normN(it.name)===nn&&(!sf||normN(it.u)===sf));if(!hit)hit=list.find(it=>normN(it.name)===nn);return hit==null?null:num(hit.p)}
 function catP(ci){const c=CAT[ci];if(!c)return '';if(S.usePriceList){const p=findPrice(c[2],c[1],c[0]);if(p!=null)return p}return c[4]}
 function fmtVat(n){return SmetaCalc.fmtVat(n)}
-function blank(){return{objectName:'',addr:'',client:'',area:'',num:'1',date:new Date().toISOString().slice(0,10),disc:0,rooms:[],usePriceList:false}}
+function blank(){return{objectName:'',addr:'',client:'',area:'',num:'1',date:new Date().toISOString().slice(0,10),disc:0,coef:1,rooms:[],usePriceList:false}}
 const LIB_KEY='smeta_v1_library',BACKUP_KEY='smeta_v1_backup',PRICE_BACKUP='smeta_price_backup',CO_BACKUP='smeta_co_backup';
 let LIB=null,saveState={ok:true,warnings:[]},pendingImport=null,syncState={level:'device',detail:''},syncTransportError='',syncing=false,syncTimer=0;
 function storageGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -397,10 +397,10 @@ function load(){const planned=SmetaLib.planLoad({libRaw:storageGet(LIB_KEY),lega
 function save(){if(saveState.readOnly){paintSave();return}if(!LIB)return;SmetaLib.capture(LIB,S);const applied=persistLib();if(!applied.ok){saveState={ok:false,readOnly:false,heldRaw:saveState.heldRaw||null,msg:applied.message,warnings:saveState.warnings||[]};paintSave();return}saveState={ok:true,readOnly:false,heldRaw:saveState.heldRaw||null,warnings:saveState.warnings||[]};syncTransportError='';refreshStatus();paintSave();scheduleSync()}
 function downloadHeld(){if(!saveState.heldRaw)return;const blob=new Blob([saveState.heldRaw],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='smeta_library_damaged.json';a.click()}
 function paintSave(){const el=document.getElementById('saveState');if(!el)return;if(saveState.readOnly||saveState.ok===false){el.className='savebad';el.textContent=saveState.msg||'Не сохранилось';return}const text={device:'Сохранено на этом устройстве'+(syncState.detail?'. '+syncState.detail:'. Сервер не подключён, это не облако.'),pending:'Сохранено на этом устройстве, ожидает отправки'+(syncState.detail?'. '+syncState.detail:'.'),server:'Сохранено на сервере.',conflict:syncState.detail||'Конфликт с сервером. Местная копия не затёрта.',error:'Сохранено на этом устройстве. '+(syncState.detail||'Ошибка сервера')};el.className=syncState.level==='conflict'||syncState.level==='error'?'savebad':(syncState.level==='pending'?'savewait':'saveok');el.textContent=text[syncState.level]||text.device}
-function adopt(est){S=est;if(!Array.isArray(S.rooms))S.rooms=[];S.rooms.forEach(r=>{if(!Array.isArray(r.works))r.works=[]});assistUndo=null;const u=document.getElementById('assist-undo');if(u)u.hidden=true;save();bindK();render()}
+function adopt(est){smKeys=null;S=est;if(!Array.isArray(S.rooms))S.rooms=[];S.rooms.forEach(r=>{if(!Array.isArray(r.works))r.works=[]});assistUndo=null;const u=document.getElementById('assist-undo');if(u)u.hidden=true;save();bindK();render()}
 function showLib(){document.body.classList.add('lib-open');renderLib()}
 function hideLib(){document.body.classList.remove('lib-open')}
-function estSum(est){try{return SmetaCalc.objFin(est.rooms||[],est&&est.disc,!!(est&&est.k&&est.k.discSpec),SP)}catch(e){return 0}}
+function estSum(est){try{return SmetaCalc.objFin(est.rooms||[],est&&est.disc,!!(est&&est.k&&est.k.discSpec),SP,SmetaCalc.coefOf(est&&est.coef))}catch(e){return 0}}
 function objectSum(obj){return (obj.estimates||[]).filter(e=>!e.archived).reduce((a,e)=>a+estSum(e.estimate),0)}
 function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>flushSync(),400)}
 async function api(method,path,body){const headers={};if(token())headers.Authorization='Bearer '+token();if(body!=null)headers['Content-Type']='application/json';const res=await fetch(serverUrl()+path,{method,headers,body:body!=null?JSON.stringify(body):undefined});const text=await res.text();let data=null;try{data=text?JSON.parse(text):null}catch(e){data={error:'непонятный ответ сервера'}}if(res.status===401)localStorage.removeItem('smeta_v1_token');return {ok:res.ok,status:res.status,data}}
@@ -429,8 +429,9 @@ function openPrintPreview(mode){mode=mode||'sm';setPrintStyle(mode);document.get
 function closePrintPreview(){document.body.classList.remove('print-preview');const bar=document.getElementById('printBar');if(bar)bar.hidden=true;document.getElementById('print').innerHTML=''}
 function bindWorkRows(){document.querySelectorAll('#rooms .wr').forEach(row=>{if(row.dataset.bound)return;row.dataset.bound='1';row.tabIndex=0;row.addEventListener('keydown',ev=>{if(ev.target!==row)return;if(ev.key!=='Enter'&&ev.key!==' ')return;ev.preventDefault();const cb=row.querySelector('input[type=checkbox]');if(cb)cb.click()});row.addEventListener('click',ev=>{if(ev.target.closest('input,textarea,select,button,a,label'))return;const sel=window.getSelection&&window.getSelection();if(sel&&!sel.isCollapsed&&row.contains(sel.anchorNode))return;const cb=row.querySelector('input[type=checkbox]');if(cb)cb.click()})})}
 function geo(r){return SmetaCalc.geo(r)}
-function lineSum(w){return SmetaCalc.lineSum(w)}
-function roomTot(r){return SmetaCalc.roomTot(r,SP)}
+function priceCoef(){return SmetaCalc.coefOf(S&&S.coef)}
+function lineSum(w){return SmetaCalc.lineSum(w,priceCoef())}
+function roomTot(r){return SmetaCalc.roomTot(r,SP,priceCoef())}
 function disc(){return SmetaCalc.discOf(S&&S.disc)}
 function roomWarns(r){const msgs=[];if(!r)return msgs;if(!r.noDims){const L=Math.max(0,num(r.L)),W=Math.max(0,num(r.W)),H=Math.max(0,num(r.H)),op=num(r.open);const gross=2*(L+W)*H;if(op>0&&op>gross)msgs.push('Проёмы больше площади стен — стены обнулены. Проверьте размеры проёмов.');const g=geo(r);const noSize=!num(r.L)&&!num(r.W);if((r.works||[]).some(w=>num(w.qty)===0)&&(noSize||(g.floor===0&&g.walls===0&&g.perim===0)))msgs.push('В помещении нет размеров, поэтому количество посчиталось как 0. Укажите длину и ширину или введите количество вручную.')}else if((r.works||[]).some(w=>num(w.qty)===0))msgs.push('Количество равно 0. Для работ без размеров укажите количество вручную.');return msgs}
 function tick(ri,ci,wi,on){const r=S.rooms[ri];if(!r||!Array.isArray(r.works))return;if(!on){if(wi>=0&&wi<r.works.length)r.works.splice(wi,1)}else{const c=CAT[ci];if(!c)return;if(r.works.some(w=>w.sec===c[0]&&w.name===c[2]&&w.ci!==-1))return;const g=geo(r);const qty=c[5]==='manual'?1:g[c[5]];r.works.push({sec:c[0],surf:c[1],name:c[2],unit:c[3],price:catP(ci)??'',base:c[5],qty:qty,auto:c[5]!=='manual',ci})}save();render()}
@@ -444,6 +445,7 @@ function copyRoom(ri){const src=S.rooms[ri];if(!src)return;const copy=JSON.parse
 function setRoomKind(ri,name){const r=S.rooms[ri];if(!r||!name)return;r.name=name;if(name==='Электрика')r.noDims=true;save();render()}
 function _render(){
  ['addr','client','objectName','area','num','date','disc'].forEach(k=>{const e=document.getElementById('o_'+k);if(e&&document.activeElement!==e)e.value=S[k]??''});
+ const coefEl=document.getElementById('o_coef');if(coefEl&&document.activeElement!==coefEl)coefEl.value=S.coef==null||S.coef===''?'1':S.coef;
  const dtEl=document.getElementById('docTitle');if(dtEl)dtEl.textContent='Смета №'+(S.num||'');
  if(S.tab===undefined)S.tab='p';
  if(typeof S.tab==='number'&&(S.tab<0||S.tab>=S.rooms.length))S.tab='p';
@@ -470,21 +472,23 @@ function _render(){
  r.openS=r.openS||{};
  const secs=SECTIONS.map(sec=>{let n=0,sum=0;const by={};
   const used=new Set();
-  CAT.forEach((c,ci)=>{if(c[0]!==sec)return;const wi=r.works.findIndex((w,i)=>!used.has(i)&&w.sec===sec&&w.name===c[2]&&w.ci!==-1);if(wi>=0){used.add(wi);n++;sum+=lineSum(r.works[wi])}(by[c[1]]=by[c[1]]||[]).push([wi>=0?r.works[wi]:undefined,wi,ci,c[2],c[1]])});
-  r.works.forEach((w,wi)=>{if(w.sec!==sec||used.has(wi))return;used.add(wi);n++;sum+=lineSum(w);(by[w.surf||'своя']=by[w.surf||'своя']||[]).push([w,wi,-1,w.name,w.surf||'своя'])});
+  CAT.forEach((c,ci)=>{if(c[0]!==sec)return;if(!SmetaCalc.smVisible(c[0],c[2],smKeys))return;const wi=r.works.findIndex((w,i)=>!used.has(i)&&w.sec===sec&&w.name===c[2]&&w.ci!==-1);if(wi>=0){used.add(wi);n++;sum+=lineSum(r.works[wi])}(by[c[1]]=by[c[1]]||[]).push([wi>=0?r.works[wi]:undefined,wi,ci,c[2],c[1]])});
+  r.works.forEach((w,wi)=>{if(w.sec!==sec||used.has(wi))return;if(!SmetaCalc.smVisible(w.sec,w.name,smKeys))return;used.add(wi);n++;sum+=lineSum(w);(by[w.surf||'своя']=by[w.surf||'своя']||[]).push([w,wi,-1,w.name,w.surf||'своя'])});
+  if(smKeys&&!Object.keys(by).length)return '';
   let body='';
   Object.keys(by).forEach(surf=>{const ss=by[surf].reduce((a,x)=>a+(x[1]>=0?lineSum(x[0]):0),0);
    body+=`<div class="surf" data-s="${esc(surf)}">${esc(surf)}${ss?`<span>${money(ss)}</span>`:''}</div>`+by[surf].map(x=>row(...x)).join('')});
   body+=`<div style="padding:6px 10px"><button class="sec" onclick="addCustom(${ri},'${sec}')">+ своя работа</button></div>`;
-  return `<div class="catsec"><div class="sech" onclick="S.rooms[${ri}].openS['${sec}']=!S.rooms[${ri}].openS['${sec}'];save();render()">${S.rooms[ri].openS[sec]?'▾':'▸'} ${esc(sec)}${SP.includes(sec)?' <span class=muted>спецмонтаж</span>':''} <span class="cnt${n?' has':''}">${n}</span><span class="sum">${n?money(sum):''}</span></div>
-   <div class="secbody" style="display:${r.openS[sec]?'block':'none'}" data-open="${r.openS[sec]?1:0}">${body}</div></div>`}).join('');
+  const open=smKeys?true:!!r.openS[sec];
+  return `<div class="catsec"><div class="sech" onclick="S.rooms[${ri}].openS['${sec}']=!S.rooms[${ri}].openS['${sec}'];save();render()">${open?'▾':'▸'} ${esc(sec)}${SP.includes(sec)?' <span class=muted>спецмонтаж</span>':''} <span class="cnt${n?' has':''}">${n}</span><span class="sum">${n?money(sum):''}</span></div>
+   <div class="secbody" style="display:${open?'block':'none'}" data-open="${open?1:0}">${body}</div></div>`}).join('');
  const dims=r.noDims?'':`<div class="grid">${[['L','Длина, м'],['W','Ширина, м'],['H','Высота, м'],['floor','Площадь пола, м²'],['open','Проёмы, м²'],['slopes','Откосы, м/п']].map(([k,l])=>`<label>${l}<input type="text" inputmode="decimal" value="${esc(r[k]??'')}" placeholder="${k==='floor'?'авто':''}" data-r="${ri}" data-k="${k}" class="rin${r.bad&&r.bad[k]?' bad':''}"></label>`).join('')}</div>`;
  const kinds=['Комната','Кухня','Ванная','Туалет','Коридор','Прихожая','Балкон','Электрика'];
  document.getElementById('rooms').innerHTML=`<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input value="${esc(r.name)}" data-r="${ri}" data-k="name" class="rin" style="font-weight:600;font-size:16px;max-width:300px">
   <select onchange="setRoomKind(${ri},this.value)"><option value="">Тип помещения</option>${kinds.map(n=>`<option ${r.name===n?'selected':''}>${esc(n)}</option>`).join('')}</select>
   <button class="sec" onclick="copyRoom(${ri})">Копировать</button>
   <button class="del" onclick="if(confirm('Удалить помещение?')){S.rooms.splice(${ri},1);S.tab='p';save();render()}">Удалить</button></div>${dims}
-  <div class="search"><input id="q" placeholder="Поиск по справочнику..." value="${esc(q)}" oninput="filterCat(this.value)"><span class="muted">галочка добавляет работу</span></div>
+  <div class="search"><button type="button" class="${smKeys?'':'sec'}" onclick="showMarked()">См.</button><button type="button" class="${smKeys?'sec':''}" onclick="showAll()">Все</button><input id="q" placeholder="Поиск по справочнику..." value="${esc(q)}" oninput="filterCat(this.value)"><span class="muted">См. — отмеченные, они едут в другую комнату без галочек</span></div>
   ${secs}${roomWarns(r).map(w=>`<div class="warn">${esc(w)}</div>`).join('')}<div class="stats tot" id="rt${ri}"></div></div>`;
  document.querySelectorAll('.rin').forEach(e=>e.onchange=()=>setR(+e.dataset.r,e.dataset.k,e.value));
  document.querySelectorAll('.win').forEach(e=>{e.oninput=()=>setW(+e.dataset.r,+e.dataset.w,e.dataset.k,e.value);e.onchange=()=>{if(e.dataset.k==='name'){render();return}const p=parseUserNum(e.value,0,1e9);const w=S.rooms[+e.dataset.r].works[+e.dataset.w];w[e.dataset.k]=p.store;if(e.dataset.k==='qty')w.auto=false;save();e.value=p.store;e.classList.toggle('bad',p.bad);renderTotals()}});
@@ -508,8 +512,12 @@ function renderTotals(){const d=disc();S.rooms.forEach((r,ri)=>{const t=roomTot(
  <div class="svod-card"><h4>Итого</h4><div class="row"><span>Пол, м²</span><b>${T.fa}</b></div><div class="row"><span>Общестрой</span><b>${money(T.g)}</b></div><div class="row"><span>Спецмонтаж</span><b>${money(T.s)}</b></div><div class="row"><span>Итого</span><b>${money(T.t)}</b></div></div></div>
  <div class="stats big"><span>${dLab}</span><span class="tot">Итого со скидкой: <span id="sum_td">${money(T.td)}</span></span>
  <span>В т.ч. НДС 5%: ${fmtVat(T.td)}</span>${area?`<span>За м²: ${money(T.td/area)}</span>`:''}</div>`}
+let smKeys=null;
+function showMarked(){const r=typeof S.tab==='number'?S.rooms[S.tab]:null;smKeys=SmetaCalc.smKeysFromWorks(r&&r.works);render()}
+function showAll(){smKeys=null;render()}
 function bindObj(){['addr','client','objectName','area','num','date','disc'].forEach(k=>document.getElementById('o_'+k).oninput=e=>{S[k]=e.target.value;save();renderTotals()});
- document.getElementById('o_disc').onchange=e=>{S.disc=disc();e.target.value=S.disc;save();render()}}
+ document.getElementById('o_disc').onchange=e=>{S.disc=disc();e.target.value=S.disc;save();render()};
+ const coef=document.getElementById('o_coef');coef.oninput=e=>{S.coef=e.target.value;save();renderTotals()};coef.onchange=e=>{const n=SmetaCalc.coefOf(e.target.value);S.coef=n;e.target.value=String(n);save();render()}}
 function newObject(){if(saveState.readOnly){alert(saveState.msg||'Запись остановлена');return}if(!confirm('Создать новый объект с пустой сметой? Текущие сметы останутся.'))return;SmetaLib.capture(LIB,S);const obj=SmetaLib.addObject(LIB,{},blank());adopt(obj.estimates[0].estimate);hideLib()}
 function newObj(){if(saveState.readOnly){alert(saveState.msg||'Запись остановлена');return}if(!confirm('Создать ещё одну смету на этом объекте? Текущая смета останется.'))return;SmetaLib.capture(LIB,S);const item=SmetaLib.addEstimate(LIB,LIB.activeObjectId,blank());if(!item)return;adopt(item.estimate);hideLib()}
 function exportJSON(){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='smeta_'+(S.addr||'obj').replace(/[^\wа-яё]+/gi,'_')+'.json';a.click()}
@@ -531,9 +539,9 @@ function KD(){S.k=Object.assign({},K_DEF,S.k||{});return S.k}
 const words=SmetaCalc.words,plural=SmetaCalc.plural,sp=SmetaCalc.sp,rubWords=SmetaCalc.rubWords,kop=SmetaCalc.kopStrFromAmount;
 const vat=x=>SmetaCalc.vatValue(x);
 const rk=x=>{const n=Math.round(Math.abs(num(x))*100);return sp(Math.floor(n/100))+' р. '+String(n%100).padStart(2,'0')+' коп.'};
-function roomFin(r){return SmetaCalc.roomFin(r,disc(),KD().discSpec,SP)}
-function objFin(){return SmetaCalc.objFin(S.rooms,disc(),KD().discSpec,SP)}
-function objBase(){return SmetaCalc.objBase(S.rooms,SP)}
+function roomFin(r){return SmetaCalc.roomFin(r,disc(),KD().discSpec,SP,priceCoef())}
+function objFin(){return SmetaCalc.objFin(S.rooms,disc(),KD().discSpec,SP,priceCoef())}
+function objBase(){return SmetaCalc.objBase(S.rooms,SP,priceCoef())}
 const F=(v,blank)=>v?esc(v):(blank||'___________________');
 // ----- смета -----
 const n2=x=>{const n=num(x);return n?String(n):'-'};
@@ -556,7 +564,7 @@ function buildSmeta(){const d=disc();let h='';
   SECTIONS.forEach(sec=>{const ws=r.works.filter(w=>w.sec===sec);if(!ws.length)return;let ss=0,ls='';
    rows+=`<tr class="sec"><td></td><td>${esc(sec)}</td><td class="r">Цена</td><td class="r">Кол-во</td><td class="r">Сумма</td></tr>`;
    ws.forEach(w=>{if(w.surf!==ls){rows+=`<tr class="sur"><td></td><td colspan=4>${esc(w.surf)}</td></tr>`;ls=w.surf}ss+=lineSum(w);
-    rows+=`<tr><td>${esc(w.surf)}</td><td>${esc(w.name)}</td><td class="r">${SmetaCalc.numStr(w.price)} р.</td><td class="r">${SmetaCalc.numStr(w.qty)} ${esc(w.unit)}</td><td class="r">${sp(lineSum(w))} р.</td></tr>`});
+    rows+=`<tr><td>${esc(w.surf)}</td><td>${esc(w.name)}</td><td class="r">${SmetaCalc.numStr(SmetaCalc.effPrice(w.price,priceCoef()))} р.</td><td class="r">${SmetaCalc.numStr(w.qty)} ${esc(w.unit)}</td><td class="r">${sp(lineSum(w))} р.</td></tr>`});
    rows+=`<tr class="it"><td colspan=4>Итого - ${esc(sec)}</td><td class="r">${sp(ss)} р.</td></tr>`});
   h+=`<div class="pp">${smHead(r.name,g)}<div class="rn">${esc(r.name)}</div><table class="st">${rows}
   <tr class="tt"><td colspan=4>Итого по помещению - ${esc(r.name)}</td><td class="r">${sp(t.t)} р.</td></tr>
@@ -830,7 +838,7 @@ function closePdf(){pdfDraft=null;const box=document.getElementById('pdfBox');if
 function renderPdf(){const box=document.getElementById('pdfBox');const msg=document.getElementById('pdfMsg');const host=document.getElementById('pdfRows');if(!box||!host)return;box.hidden=false;const rows=pdfDraft&&pdfDraft.rows||[];const warns=(pdfDraft&&pdfDraft.warnings||[]).map(w=>esc(w)).join(' ');if(msg)msg.textContent='Сборка '+BUILD+'. Файл читается только в этом браузере и никуда не отправляется. Несопоставленные строки не отмечаются сами. Итоги, шапка и сводная в позиции не попадают.'+(warns?(' '+warns):'');host.innerHTML=rows.length?`<table><tr><th></th><th>Помещение</th><th>Позиция</th><th>Кол-во</th><th>Цена</th><th>Каталог</th></tr>${rows.map((r,i)=>`<tr><td><input type="checkbox" ${r.include?'checked':''} onchange="pdfEdit(${i},'include',this.checked)"></td><td><input value="${esc(r.room)}" oninput="pdfEdit(${i},'room',this.value)"></td><td><input value="${esc(r.name)}" oninput="pdfEdit(${i},'name',this.value)" onchange="renderPdf()"></td><td><input value="${esc(r.qty)}" oninput="pdfEdit(${i},'qty',this.value)" style="width:70px"></td><td><input value="${esc(r.price)}" oninput="pdfEdit(${i},'price',this.value)" style="width:80px"></td><td>${r.confident&&r.useCatalog?'<span class="aok">каталог</span>':`<span class="aerr">не сопоставлено</span>`}${r.catalog?` <label class="ck"><input type="checkbox" ${r.useCatalog?'checked':''} onchange="pdfEdit(${i},'useCatalog',this.checked)"> взять «${esc(r.catalog.name)}»</label>`:''}</td></tr>`).join('')}</table>`:'<p class="muted">Позиций пока нет.</p>'}
 function pdfEdit(i,field,value){if(!pdfDraft||!pdfDraft.rows[i])return;const row=pdfDraft.rows[i];if(field==='include'||field==='useCatalog'){row[field]=!!value;if(field==='useCatalog'&&value)row.include=true;renderPdf();return}if(field==='qty'||field==='price'){const n=String(value).trim().replace(/\s/g,'').replace(',','.');row[field]=n===''?null:(/^\d+(\.\d+)?$/.test(n)?Math.round(Number(n)*100)/100:null);return}row[field]=String(value);if(field==='name'){const found=SmetaPdf.matchCatalog(row.name,row.unit,pdfCatalog());row.catalog=found.item;row.confident=found.confident;row.score=found.score;if(!found.confident)row.useCatalog=false}}
 function openPdfDraft(parsed){pdfDraft=parsed||{rows:[],warnings:[]};renderPdf()}
-const BUILD='20261110c';
+const BUILD='20261110d';
 async function readPdfPages(data){let pdfjs;try{pdfjs=await import('./vendor/pdfjs/pdf.min.mjs?v='+BUILD)}catch(e){return {ok:false,code:'missing'}}pdfjs.GlobalWorkerOptions.workerSrc=new URL('vendor/pdfjs/pdf.worker.min.mjs?v='+BUILD,document.baseURI).href;const load=async(disableWorker)=>pdfjs.getDocument({data:data.slice(),disableWorker:!!disableWorker}).promise;let doc;try{doc=await load(false)}catch(e){const name=String(e&&e.name||'');if(name==='PasswordException'||/password/i.test(String(e&&e.message||'')))return {ok:false,code:'password'};try{doc=await load(true)}catch(e2){const name2=String(e2&&e2.name||'');if(name2==='PasswordException'||/password/i.test(String(e2&&e2.message||'')))return {ok:false,code:'password'};return {ok:false,code:'broken'}}}try{const pages=[];let chars=0;const limit=Math.min(doc.numPages,SmetaPdf.MAX_PAGES);for(let i=1;i<=limit;i++){const page=await doc.getPage(i);const content=await page.getTextContent();const items=(content.items||[]).filter(it=>it&&it.str).map(it=>({str:it.str,x:it.transform[4],y:it.transform[5]}));const lines=SmetaPdf.linesFromItems(items);chars+=lines.join('').length;pages.push(lines)}if(chars<15)return {ok:false,code:'empty'};return {ok:true,pages}}catch(e){return {ok:false,code:'broken'}}}
 async function importPdfFile(inp){const file=inp.files&&inp.files[0];inp.value='';if(!file)return;const problem=SmetaPdf.fileProblem(file);if(problem){alert(problem);return}let bytes;try{bytes=new Uint8Array(await file.arrayBuffer())}catch(e){alert(SmetaPdf.explainExtract('broken'));return}const read=await readPdfPages(bytes);if(!read.ok){pdfDraft={rows:[],warnings:[SmetaPdf.explainExtract(read.code)]};renderPdf();return}openPdfDraft(SmetaPdf.parsePages(read.pages,pdfCatalog()))}
 function parsePdfPaste(){const text=(document.getElementById('pdfPaste')||{}).value||'';if(!String(text).trim()){alert('Вставьте текст сметы.');return}const parsed=SmetaPdf.parsePages([text],pdfCatalog());if(!parsed.rows.length){alert('В тексте нет строк вида «название, цена, количество, единица». Шапка и итоги пропускаются.');return}openPdfDraft(parsed)}

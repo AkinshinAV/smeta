@@ -92,3 +92,37 @@ test('имя заказчика не может сломать стиль печ
   assert.equal(safe.includes('"'), false);
   assert.ok(safe.includes('Никита'));
 });
+
+test('коэффициент 1,1 умножает цену 79 до 86,9 и округляет сумму как раньше', () => {
+  assert.equal(C.coefOf(''), 1);
+  assert.equal(C.coefOf('abc'), 1);
+  assert.equal(C.coefOf(0), 1);
+  assert.equal(C.coefOf(-2), 1);
+  assert.equal(C.coefOf('1,1'), 1.1);
+  assert.equal(C.effPrice(79, 1.1), 86.9);
+  assert.equal(C.lineSum({ price: 79, qty: 1 }, 1.1), Math.round(86.9 * 1));
+  assert.equal(C.lineSum({ price: 79, qty: 10 }, 1.1), Math.round(86.9 * 10));
+  assert.equal(C.lineSum({ price: 79, qty: 10 }), 790);
+  const room = { works: [{ sec: 'Малярные работы', price: 79, qty: 10 }] };
+  assert.equal(C.roomFin(room, 0, false, ['Электромонтажные работы'], 1), 790);
+  assert.equal(C.roomFin(room, 0, false, ['Электромонтажные работы'], 1.1), Math.round(86.9 * 10));
+  assert.equal(C.objFin([room], 20, false, ['Электромонтажные работы'], 1.1), Math.round(Math.round(86.9 * 10) * 0.8));
+});
+
+test('См. переносит набор работ в другую комнату без галочек, Все снимает фильтр', () => {
+  const wallpaper = { sec: 'Демонтажные работы', name: 'Снятие обоев', ci: 4 };
+  const laminate = { sec: 'Финишная отделка полов', name: 'Укладка ламината с подложкой', ci: 40 };
+  const roomA = [wallpaper];
+  const keys = C.smKeysFromWorks(roomA);
+  assert.deepEqual(keys, ['Демонтажные работы\nСнятие обоев']);
+  assert.equal(C.smVisible(wallpaper.sec, wallpaper.name, keys), true);
+  assert.equal(C.smVisible(laminate.sec, laminate.name, keys), false);
+  const roomBWorks = [];
+  assert.equal(roomBWorks.some(w => w.name === wallpaper.name), false);
+  assert.equal(C.smVisible(wallpaper.sec, wallpaper.name, null), true);
+  assert.equal(C.smVisible(laminate.sec, laminate.name, null), true);
+  const updated = C.smKeysFromWorks([wallpaper, laminate]);
+  assert.equal(updated.length, 2);
+  assert.equal(C.smVisible(laminate.sec, laminate.name, updated), true);
+  assert.deepEqual(C.smKeysFromWorks([]), []);
+});
