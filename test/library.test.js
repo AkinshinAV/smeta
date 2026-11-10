@@ -238,3 +238,31 @@ test('архив уходит из рабочего списка и возвра
   Lib.restoreObject(lib, lib.objects[0].id, now);
   assert.equal(Lib.workList(lib.objects).some(o => o.id === lib.objects[0].id), true);
 });
+
+test('архив последнего объекта и последней сметы не создаёт пустышку', () => {
+  n = 0;
+  const { lib } = Lib.planLoad({ blank, idFactory: ids, now });
+  const id = lib.objects[0].id;
+  const estId = lib.objects[0].estimates[0].id;
+  lib.objects[0].name = 'Дом';
+  const before = lib.objects.length;
+  const archived = Lib.archiveObject(lib, id, blank, ids, now);
+  assert.equal(archived, null);
+  assert.equal(lib.objects.length, before);
+  assert.equal(lib.objects[0].archived, true);
+  assert.equal(Lib.workList(lib.objects).length, 0);
+  assert.equal(lib.activeObjectId, '');
+  assert.equal(Lib.archiveList(lib.objects).filter(row => row.type === 'object').length, 1);
+  Lib.restoreObject(lib, id, now);
+  Lib.activateEstimate(lib, id, estId);
+  const nEst = lib.objects[0].estimates.length;
+  const gone = Lib.archiveEstimate(lib, id, estId, blank, ids, now);
+  assert.equal(gone, null);
+  assert.equal(lib.objects[0].estimates.length, nEst);
+  assert.equal(Lib.workList(lib.objects)[0].estimates.length, 0);
+  assert.equal(lib.activeEstimateId, '');
+  Lib.restoreEstimate(lib, id, estId, now);
+  Lib.activateEstimate(lib, id, estId);
+  assert.equal(Lib.workList(lib.objects)[0].estimates.includes(estId), true);
+  assert.equal(lib.objects.length, before);
+});

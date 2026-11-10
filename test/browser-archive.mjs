@@ -94,6 +94,7 @@ try {
   ok('сам квадратик снимает галочку один раз', off === false);
 
   await page.evaluate(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });
+  await page.evaluate(() => { const d = document.querySelector('.more'); if (d) d.open = true; });
   await page.click('button[onclick="doPrint(\'sm\')"]');
   const printed = await page.evaluate(() => ({ n: window.__printed, preview: document.body.classList.contains('print-preview'), text: document.getElementById('print').innerText.includes('Альфа') || document.getElementById('print').innerText.includes('Адрес А'), bar: !document.getElementById('printBar').hidden }));
   ok('печать текущего объекта без setTimeout', printed.n === 1 && printed.preview && printed.text && printed.bar, JSON.stringify(printed));

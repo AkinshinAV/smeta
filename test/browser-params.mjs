@@ -153,6 +153,31 @@ try {
   }));
   ok('узкий экран параметров не разъезжается по горизонтали', narrow.table && !narrow.overflow, JSON.stringify(narrow));
   await page.screenshot({ path: path.join(outDir, 'measure-narrow.png'), fullPage: true });
+  const beforeBug = await page.evaluate(() => ({ n: LIB.objects.length, arch: SmetaLib.archiveList(LIB.objects).length, ids: SmetaLib.workList(LIB.objects).map(row => row.id) }));
+  await page.evaluate(ids => { showLib(); ids.forEach(id => archiveObj(id)); }, beforeBug.ids);
+  const bug = await page.evaluate(() => {
+    const text = document.getElementById('libView').innerText;
+    return {
+      n: LIB.objects.length,
+      work: SmetaLib.workList(LIB.objects).length,
+      arch: SmetaLib.archiveList(LIB.objects).length,
+      blank: LIB.objects.some(o => !o.archived && !(o.name || '').trim()),
+      text: text.includes('Без названия') || text.includes('Демо-дом') || text.includes('Второй дом'),
+      archMode: text.includes('Архив')
+    };
+  });
+  ok('архив всех рабочих объектов не оставляет пустышку и увеличивает счётчик', bug.n === beforeBug.n && bug.work === 0 && bug.arch > beforeBug.arch && bug.blank === false && bug.text === false, JSON.stringify({ beforeBug, bug }));
+  const backId = await page.evaluate(() => {
+    const row = SmetaLib.archiveList(LIB.objects).find(r => r.type === 'object');
+    restoreObj(row.id);
+    setLibMode('work');
+    return row.id;
+  });
+  const back = await page.evaluate(id => {
+    const obj = LIB.objects.find(o => o.id === id);
+    return { archived: obj.archived, shown: document.getElementById('libView').innerText.includes(obj.name || '') };
+  }, backId);
+  ok('объект возвращается из архива в рабочий список', back.archived === false && back.shown === true, JSON.stringify(back));
   ok('страница без исключений', errors.length === 0, errors.join(' | '));
   const failed = results.filter(r => !r.ok);
   fs.writeFileSync(path.join(outDir, 'results.json'), JSON.stringify(results, null, 2));
