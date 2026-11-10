@@ -49,33 +49,67 @@
     };
   }
 
-  function lineSum(w) {
-    const p = num(w && w.price), q = num(w && w.qty);
-    if (p < 0 || q < 0) return 0;
+  function coefOf(v) {
+    if (v == null || String(v).trim() === '') return 1;
+    const n = num(v);
+    if (!Number.isFinite(n) || n <= 0) return 1;
+    return Math.round(n * 1000) / 1000;
+  }
+
+  function effPrice(base, coef) {
+    const p = num(base);
+    if (p < 0) return 0;
+    return Math.round(p * coefOf(coef) * 100) / 100;
+  }
+
+  function lineSum(w, coef) {
+    const p = effPrice(w && w.price, coef);
+    const q = num(w && w.qty);
+    if (q < 0) return 0;
     return Math.round(p * q);
   }
 
-  function roomTot(r, spec) {
+  function roomTot(r, spec, coef) {
     const sp = spec || SPEC_DEF;
     let g = 0, s = 0;
-    ((r && r.works) || []).forEach(w => { (sp.includes(w.sec) ? s += lineSum(w) : g += lineSum(w)); });
+    ((r && r.works) || []).forEach(w => { (sp.includes(w.sec) ? s += lineSum(w, coef) : g += lineSum(w, coef)); });
     return { g, s, t: g + s };
   }
 
   function discOf(v) { return Math.min(20, Math.max(0, num(v))); }
 
-  function roomFin(r, d, discSpec, spec) {
-    const t = roomTot(r, spec);
+  function roomFin(r, d, discSpec, spec, coef) {
+    const t = roomTot(r, spec, coef);
     const k = discOf(d) / 100;
     return Math.round(t.g * (1 - k) + t.s * (discSpec ? (1 - k) : 1));
   }
 
-  function objFin(rooms, d, discSpec, spec) {
-    return (rooms || []).reduce((a, r) => a + roomFin(r, d, discSpec, spec), 0);
+  function objFin(rooms, d, discSpec, spec, coef) {
+    return (rooms || []).reduce((a, r) => a + roomFin(r, d, discSpec, spec, coef), 0);
   }
 
-  function objBase(rooms, spec) {
-    return (rooms || []).reduce((a, r) => a + roomTot(r, spec).t, 0);
+  function objBase(rooms, spec, coef) {
+    return (rooms || []).reduce((a, r) => a + roomTot(r, spec, coef).t, 0);
+  }
+
+  function smKey(sec, name) { return String(sec || '') + '\n' + String(name || ''); }
+
+  function smKeysFromWorks(works) {
+    const out = [];
+    const seen = new Set();
+    (works || []).forEach(w => {
+      if (!w || !w.name) return;
+      const key = smKey(w.sec, w.name);
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(key);
+    });
+    return out;
+  }
+
+  function smVisible(sec, name, keys) {
+    if (!keys) return true;
+    return keys.indexOf(smKey(sec, name)) >= 0;
   }
 
   function money(x) { return fl(num(x)).toLocaleString('ru-RU') + ' р.'; }
@@ -179,7 +213,8 @@
   }
 
   return {
-    SPEC_DEF, num, parseUserNum, r2, fl, geo, lineSum, roomTot, discOf, roomFin, objFin, objBase,
+    SPEC_DEF, num, parseUserNum, r2, fl, geo, coefOf, effPrice, lineSum, roomTot, discOf, roomFin, objFin, objBase,
+    smKey, smKeysFromWorks, smVisible,
     money, sp, numStr, vatParts, vatValue, kopStrFromAmount, fmtVat, rkVat, plural, words,
     rubWords, rubWordsKop, prepay, refund, cssSafe
   };
