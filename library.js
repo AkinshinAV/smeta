@@ -577,6 +577,22 @@
     return { kind: 'smeta-backup', v: 2, objects: clone(lib.objects || []) };
   }
 
+  function workList(objects) {
+    return (objects || []).filter(obj => !obj.archived).map(obj => ({
+      id: obj.id,
+      estimates: (obj.estimates || []).filter(est => !est.archived).map(est => est.id)
+    }));
+  }
+
+  function archiveList(objects) {
+    const rows = [];
+    (objects || []).forEach(obj => {
+      if (obj.archived) rows.push({ type: 'object', id: obj.id });
+      else (obj.estimates || []).forEach(est => { if (est.archived) rows.push({ type: 'estimate', objectId: obj.id, id: est.id }); });
+    });
+    return rows;
+  }
+
   function queryObjects(objects, q) {
     const s = String(q || '').trim().toLowerCase().replace(/ё/g, 'е');
     if (!s) return (objects || []).slice();
@@ -595,6 +611,6 @@
     makeEstimate, makeObject, planLoad, applyWrites, findObject, findEstimate, activePair, ensureActive,
     stamp, pullCard, capture, activateEstimate, addObject, addEstimate, duplicateObject, duplicateEstimate,
     archiveObject, restoreObject, archiveEstimate, restoreEstimate, patchObject, classifyImport, applyImport,
-    bundle, queryObjects, clone
+    bundle, queryObjects, workList, archiveList, clone
   };
 });

@@ -17,6 +17,10 @@ test('геометрия прямоугольника и ручная площа
   assert.equal(auto.floor, 1.8);
   assert.equal(auto.walls, 7.55);
   assert.equal(C.geo({ noDims: true, L: 5, W: 5 }).floor, 0);
+  const remfy = C.geo({ L: '3.43', W: '5.53', H: '2.64', open: '5.25', slopes: '6.5' });
+  assert.equal(remfy.floor, 18.97);
+  assert.equal(remfy.perim, 17.92);
+  assert.equal(remfy.walls, 42.06);
   assert.equal(C.geo({ L: 3, W: 4, H: 2.5, open: 100 }).walls, 0);
 });
 

@@ -38,7 +38,7 @@ try {
     save();
     localStorage.setItem('smeta_v1_server_url', base);
   }, 'http://127.0.0.1:8795');
-  await page.evaluate(() => showLib());
+  await page.evaluate(() => { showLib(); const det = [...document.querySelectorAll('#libView details')].find(d => d.querySelector('#srvUrl')); if (det) det.open = true; });
   await page.type('#srvUser', 'admin');
   await page.type('#srvPass', 'long-password-1');
   await page.click('button[onclick="loginServer()"]');

@@ -216,3 +216,25 @@ test('поиск находит заказчика объекта и не сме
   assert.deepEqual(Lib.queryObjects(objects, 'бета').map(i => i.id), ['2']);
   assert.equal(Lib.queryObjects(objects, '').length, 2);
 });
+
+test('архив уходит из рабочего списка и возвращается', () => {
+  n = 0;
+  const { lib } = Lib.planLoad({ blank, idFactory: ids, now });
+  lib.objects[0].name = 'Дом';
+  lib.objects[0].estimates[0].estimate = est('Дом', 'Анна', 10);
+  const extra = Lib.addEstimate(lib, lib.objects[0].id, est('Дом', 'Анна', 20), ids, now);
+  assert.deepEqual(Lib.workList(lib.objects)[0].estimates.length, 2);
+  Lib.archiveEstimate(lib, lib.objects[0].id, extra.id, blank, ids, now);
+  const work = Lib.workList(lib.objects);
+  assert.equal(work.length, 1);
+  assert.equal(work[0].estimates.includes(extra.id), false);
+  assert.deepEqual(Lib.archiveList(lib.objects), [{ type: 'estimate', objectId: lib.objects[0].id, id: extra.id }]);
+  Lib.restoreEstimate(lib, lib.objects[0].id, extra.id, now);
+  assert.equal(Lib.workList(lib.objects)[0].estimates.includes(extra.id), true);
+  assert.equal(Lib.archiveList(lib.objects).length, 0);
+  Lib.archiveObject(lib, lib.objects[0].id, blank, ids, now);
+  assert.equal(Lib.workList(lib.objects).some(o => o.id === lib.objects[0].id), false);
+  assert.equal(Lib.archiveList(lib.objects).some(row => row.type === 'object' && row.id === lib.objects[0].id), true);
+  Lib.restoreObject(lib, lib.objects[0].id, now);
+  assert.equal(Lib.workList(lib.objects).some(o => o.id === lib.objects[0].id), true);
+});
