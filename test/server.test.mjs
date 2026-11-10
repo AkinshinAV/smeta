@@ -8,22 +8,24 @@ import { start } from '../server/server.mjs';
 const estimate = { objectName: 'Дом', addr: 'Адрес', client: 'Анна', num: '1', date: '2026-11-09', disc: 0, rooms: [{ name: 'Комната', works: [{ sec: 'Малярные работы', name: 'Работа', price: 10, qty: 2 }] }], usePriceList: false };
 
 async function boot(extra = {}) {
+  const { yandexFetch, ...envExtra } = extra;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'smeta-srv-'));
   const started = await start({
     dbPath: path.join(dir, 'smeta.sqlite'),
     host: '127.0.0.1',
     port: 0,
+    yandexFetch,
     env: Object.assign({
       SMETA_ORIGINS: 'https://akinshinav.github.io',
       SMETA_ADMIN_USER: 'admin',
       SMETA_ADMIN_PASSWORD: 'long-password-1'
-    }, extra)
+    }, envExtra)
   });
   return Object.assign(started, { dir });
 }
 
-async function send(port, method, urlPath, { token, body, origin } = {}) {
-  const headers = {};
+async function send(port, method, urlPath, { token, body, origin, headers: extra } = {}) {
+  const headers = Object.assign({}, extra);
   if (token) headers.Authorization = 'Bearer ' + token;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (origin) headers.Origin = origin;
@@ -103,6 +105,45 @@ test('вход, роли, CORS, снимок, конфликт версий, б�
     await send(srv.port, 'POST', '/api/logout', { token: userLogin.data.token });
     const after = await send(srv.port, 'GET', '/api/snapshot', { token: userLogin.data.token });
     assert.equal(after.status, 401);
+  } finally {
+    await srv.close();
+  }
+});
+
+test('прокси Yandex не пишет ключ в базу и берёт модель по наличию картинки', async () => {
+  const calls = [];
+  const secret = 'test-yandex-key-not-stored';
+  const srv = await boot({
+    yandexFetch: async (url, init) => {
+      calls.push({ url, body: JSON.parse(init.body), auth: init.headers.Authorization, folder: init.headers['x-folder-id'] });
+      return new Response(JSON.stringify({ choices: [{ message: { content: '{"rooms":[]}' } }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+  });
+  try {
+    const anon = await send(srv.port, 'POST', '/api/ai/yandex', { headers: { 'X-Yandex-Api-Key': secret }, body: { folderId: 'b1gfolder', text: 'комната', system: 'json', images: [] } });
+    assert.equal(anon.status, 401);
+    const session = await send(srv.port, 'POST', '/api/login', { body: { username: 'admin', password: 'long-password-1' } });
+    const textOnly = await send(srv.port, 'POST', '/api/ai/yandex', {
+      token: session.data.token,
+      headers: { 'X-Yandex-Api-Key': secret },
+      body: { folderId: 'b1gfolder', text: 'комната', system: 'верни json', images: [] }
+    });
+    assert.equal(textOnly.status, 200);
+    assert.equal(textOnly.data.text, '{"rooms":[]}');
+    assert.equal(textOnly.data.model, 'gpt://b1gfolder/yandexgpt-5.1');
+    assert.equal(JSON.stringify(textOnly.data).includes(secret), false);
+    const withImage = await send(srv.port, 'POST', '/api/ai/yandex', {
+      token: session.data.token,
+      headers: { 'X-Yandex-Api-Key': secret },
+      body: { folderId: 'b1gfolder', text: '', system: 'верни json', images: [{ mime: 'image/jpeg', data: 'abcd' }] }
+    });
+    assert.equal(withImage.status, 200);
+    assert.equal(withImage.data.model, 'gpt://b1gfolder/qwen3.5-35b');
+    assert.equal(calls[1].body.model, 'gpt://b1gfolder/qwen3.5-35b');
+    assert.equal(calls[1].auth, 'Api-Key ' + secret);
+    assert.ok(calls[1].body.messages[1].content.some(part => part.type === 'image_url' && part.image_url.url.includes('abcd')));
+    const dbText = fs.readFileSync(path.join(srv.dir, 'smeta.sqlite'));
+    assert.equal(dbText.includes(Buffer.from(secret)), false);
   } finally {
     await srv.close();
   }

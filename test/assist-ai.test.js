@@ -16,7 +16,7 @@ function rowsOf(plan) {
   })));
 }
 
-test('мок Gemini даёт план, который applyPlan кладёт в смету ценой каталога', async () => {
+test('мок Yandex даёт план, который applyPlan кладёт в смету ценой каталога', async () => {
   const model = {
     warnings: ['Высота взята с подписи на плане.'],
     unknown: [],
@@ -26,19 +26,27 @@ test('мок Gemini даёт план, который applyPlan кладёт в 
       proposals: [{ i: 4, include: true, qty: 42.06, note: 'стены' }]
     }]
   };
-  let calls = [];
+  let call = null;
   const out = await AI.generatePlan({
     key: 'test-not-a-real-key',
+    folderId: 'b1gtestfolder',
+    endpoint: 'http://127.0.0.1:8787/api/ai/yandex',
     text: 'Комната, снять обои',
+    images: [{ mime: 'image/jpeg', data: 'abc' }],
     catalog,
     rooms: ['Комната'],
-    fetch: async (url) => {
-      calls.push(url);
-      return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(model) }] } }] }) };
+    fetch: async (url, init) => {
+      call = { url, init, body: JSON.parse(init.body) };
+      return { ok: true, status: 200, json: async () => ({ text: JSON.stringify(model), model: 'gpt://b1gtestfolder/qwen3.5-35b' }) };
     }
   });
   assert.equal(out.ok, true);
   assert.equal(out.plan.matcher, 'ai');
+  assert.equal(call.url, 'http://127.0.0.1:8787/api/ai/yandex');
+  assert.equal(call.init.headers['X-Yandex-Api-Key'], 'test-not-a-real-key');
+  assert.equal(call.body.folderId, 'b1gtestfolder');
+  assert.equal(call.body.images[0].data, 'abc');
+  assert.equal(JSON.stringify(call.body).includes('test-not-a-real-key'), false);
   assert.equal(out.plan.rooms[0].dims.floor, 18.97);
   assert.equal(out.plan.rooms[0].dims.perim, 17.92);
   assert.equal(out.plan.rooms[0].dims.walls, 42.06);
@@ -52,7 +60,6 @@ test('мок Gemini даёт план, который applyPlan кладёт в 
   assert.equal(applied.added[0].price, 99);
   assert.equal(applied.added[0].qty, 42.06);
   assert.equal(applied.rooms[0].works[0].price, 99);
-  assert.ok(calls[0].includes('gemini-2.5-flash'));
 });
 
 test('неверный i не попадает в смету', () => {
@@ -76,18 +83,16 @@ test('неверный i не попадает в смету', () => {
   assert.deepEqual(applied.added.map(row => row.name), ['Укладка ламината с подложкой']);
 });
 
-test('без ключа нет запроса и нет отката к parseWorks', async () => {
+test('без ключа или каталога нет запроса и нет отката к parseWorks', async () => {
   let called = false;
-  const out = await AI.generatePlan({
-    key: '   ',
-    text: 'Кухня 12 м2, снять обои',
-    catalog,
-    fetch: async () => { called = true; return { ok: false, status: 500, json: async () => ({}) }; }
-  });
+  const fetch = async () => { called = true; return { ok: false, status: 500, json: async () => ({}) }; };
+  const noKey = await AI.generatePlan({ key: '   ', folderId: 'b1g', endpoint: 'http://server/api/ai/yandex', text: 'Кухня 12 м2, снять обои', catalog, fetch });
+  const noFolder = await AI.generatePlan({ key: 'secret', folderId: '', endpoint: 'http://server/api/ai/yandex', text: 'Кухня', catalog, fetch });
   assert.equal(called, false);
-  assert.equal(out.ok, false);
-  assert.equal(out.code, 'no-key');
-  assert.match(out.message, /не запускался/);
+  assert.equal(noKey.ok, false);
+  assert.equal(noKey.code, 'no-key');
+  assert.equal(noFolder.code, 'no-key');
+  assert.match(noKey.message, /не запускался/);
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   const start = html.indexOf('async function runAssistAi');
   const end = html.indexOf('function clearAssist');
@@ -97,21 +102,18 @@ test('без ключа нет запроса и нет отката к parseWor
   assert.match(fn, /no-key|Нужен ключ/);
 });
 
-test('404 первой модели повторяет запрос на gemini-2.0-flash', async () => {
-  const urls = [];
+test('без адреса сервера Yandex из браузера не вызывается', async () => {
+  let called = false;
   const out = await AI.generatePlan({
-    key: 'test-not-a-real-key',
+    key: 'secret',
+    folderId: 'b1g',
     text: 'комната',
     catalog,
-    fetch: async (url) => {
-      urls.push(url);
-      if (urls.length === 1) return { ok: false, status: 404, json: async () => ({}) };
-      return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"rooms":[]}' }] } }] }) };
-    }
+    fetch: async () => { called = true; return { ok: true, status: 200, json: async () => ({ text: '{}' }) }; }
   });
-  assert.equal(out.ok, true);
-  assert.equal(urls.length, 2);
-  assert.ok(urls[1].includes('gemini-2.0-flash'));
+  assert.equal(called, false);
+  assert.equal(out.code, 'no-server');
+  assert.match(out.message, /не запускался/);
 });
 
 test('количество вне диапазона не отмечается', () => {
