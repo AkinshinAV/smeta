@@ -24,6 +24,10 @@ test('прайс М0912 совпадает с разобранным PDF по ч
   assert.equal(press.s, 'Спецмонтажные работы');
   assert.equal(press.u, 'Кондиционирование');
   assert.equal(press.p, 5125);
+  const freon = price.find(item => item.n === '24.4');
+  assert.equal(freon.name, 'Демонтаж фреоновой трассы 1');
+  assert.equal(freon.un, 'шт');
+  assert.equal(freon.p, 226);
   assert.equal(price.some(item => item.name.includes('Цены актуальны')), false);
   assert.equal(price.some(item => item.sn === '11' || item.sn === '14' || item.sn === '16' || item.sn === '22'), false);
   assert.equal(price.filter(item => item.sn === '24').length > 50, true);
