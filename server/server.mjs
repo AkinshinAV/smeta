@@ -17,6 +17,21 @@ const MAX_USERS = 10;
 const MAX_BODY = 1_500_000;
 const TOKEN_DAYS = 30;
 
+function cleanYandexImages(list) {
+  if (list == null) return [];
+  if (!Array.isArray(list) || list.length > 10) return null;
+  const out = [];
+  for (const image of list) {
+    if (!image || typeof image.data !== 'string') return null;
+    const mime = image.mime === 'image/png' || image.mime === 'image/webp' ? image.mime : (image.mime === 'image/jpeg' ? 'image/jpeg' : null);
+    if (!mime) return null;
+    const data = image.data.replace(/\s/g, '');
+    if (!data || data.length > 1_500_000 || !/^[A-Za-z0-9+/=]+$/.test(data)) return null;
+    out.push({ mime, data });
+  }
+  return out;
+}
+
 function scryptHash(password, salt = crypto.randomBytes(16)) {
   const N = 16384, r = 8, p = 1;
   const hash = crypto.scryptSync(password, salt, 32, { N, r, p });
@@ -173,7 +188,7 @@ export function start(opts = {}) {
     if (origin && origins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
-      res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+      res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Yandex-Api-Key');
       res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS');
     }
   }
@@ -185,13 +200,13 @@ export function start(opts = {}) {
     res.end(json);
   }
 
-  function readBody(req) {
+  function readBody(req, max = MAX_BODY) {
     return new Promise((resolve, reject) => {
       const chunks = [];
       let size = 0;
       req.on('data', chunk => {
         size += chunk.length;
-        if (size > MAX_BODY) {
+        if (size > max) {
           reject(Object.assign(new Error('too big'), { status: 413 }));
           req.destroy();
           return;
@@ -311,6 +326,46 @@ export function start(opts = {}) {
       const resUser = createUser(db, body && body.username, body && body.password, (body && body.role) || 'user');
       if (!resUser.ok) return send(req, res, resUser.status, { error: resUser.error });
       return send(req, res, 201, { user: resUser.user });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/ai/yandex') {
+      const apiKey = String(req.headers['x-yandex-api-key'] || '').trim();
+      const body = await readBody(req, 8_000_000);
+      const folderId = body && typeof body.folderId === 'string' ? body.folderId.trim() : '';
+      const text = body && typeof body.text === 'string' ? body.text : '';
+      const system = body && typeof body.system === 'string' ? body.system : '';
+      if (!apiKey || apiKey.length > 400) return send(req, res, 400, { error: 'Нужен ключ Yandex' });
+      if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(folderId)) return send(req, res, 400, { error: 'Нужен ID каталога Yandex' });
+      if (text.length > 20000 || system.length > 120000) return send(req, res, 400, { error: 'Слишком длинный запрос' });
+      const images = cleanYandexImages(body && body.images);
+      if (!images) return send(req, res, 400, { error: 'Картинки не подходят' });
+      const model = 'gpt://' + folderId + '/' + (images.length ? 'qwen3.5-35b' : 'yandexgpt-5.1');
+      const content = [{ type: 'text', text: text || 'Разбери приложенный дизайн.' }];
+      images.forEach(image => content.push({ type: 'image_url', image_url: { url: 'data:' + image.mime + ';base64,' + image.data } }));
+      let yandex;
+      try {
+        yandex = await (opts.yandexFetch || fetch)('https://ai.api.cloud.yandex.net/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Api-Key ' + apiKey, 'x-folder-id': folderId },
+          body: JSON.stringify({
+            model,
+            temperature: 0.2,
+            max_tokens: 4000,
+            messages: [{ role: 'system', content: system }, { role: 'user', content }]
+          })
+        });
+      } catch (e) {
+        return send(req, res, 502, { error: 'Домашний сервер не достучался до Yandex' });
+      }
+      const raw = await yandex.text();
+      const safe = raw.split(apiKey).join('');
+      if (!yandex.ok) return send(req, res, 502, { error: 'Yandex не разобрал запрос (' + yandex.status + ')' });
+      let data = null;
+      try { data = JSON.parse(safe); } catch (e) { return send(req, res, 502, { error: 'Yandex вернул не JSON' }); }
+      const message = data && data.choices && data.choices[0] && data.choices[0].message;
+      const answer = message && message.content;
+      const reply = typeof answer === 'string' ? answer : (Array.isArray(answer) ? answer.map(part => part && (part.text || part.content) || '').join('') : '');
+      if (!reply.trim()) return send(req, res, 502, { error: 'Yandex вернул пустой ответ' });
+      return send(req, res, 200, { text: reply, model });
     }
     if (req.method === 'POST' && url.pathname === '/api/admin/backup') {
       if (user.role !== 'admin') return send(req, res, 403, { error: 'Только администратор' });

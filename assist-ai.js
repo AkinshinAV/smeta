@@ -1,12 +1,15 @@
-/* Разбор текста и картинок через Google Gemini в браузере.
+/* Разбор текста и картинок через Yandex AI Studio.
+   Браузер сам в Yandex не ходит: запрос принимает домашний сервер.
    Ключ передаёт страница из localStorage. В этот файл ключ не записывается. */
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.SmetaAssistAi = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-  const KEY_NAME = 'smeta-ai-key';
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const KEY_NAME = 'smeta-yandex-key';
+  const FOLDER_NAME = 'smeta-yandex-folder';
+  const TEXT_MODEL = 'yandexgpt-5.1';
+  const VISION_MODEL = 'qwen3.5-35b';
   const MAX_BYTES = 10 * 1024 * 1024;
   const MAX_PDF_PAGES = 8;
   const MAX_IMAGES = 10;
@@ -178,52 +181,48 @@
     ].join('\n');
   }
 
-  function endpoint(model) {
-    return 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
-  }
-
-  function requestBody(text, images, catalog, roomNames) {
-    const parts = [{ text: systemPrompt(catalog, roomNames) + '\n\nТекст заказчика:\n' + String(text || '').slice(0, 20000) }];
-    (images || []).slice(0, MAX_IMAGES).forEach(image => {
-      if (!image || !image.data) return;
-      parts.push({ inlineData: { mimeType: image.mime || 'image/jpeg', data: image.data } });
-    });
+  function proxyBody(opts) {
+    const images = (opts.images || []).slice(0, MAX_IMAGES).filter(image => image && image.data).map(image => ({
+      mime: image.mime || 'image/jpeg',
+      data: image.data
+    }));
     return {
-      contents: [{ role: 'user', parts }],
-      generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
+      folderId: String(opts.folderId || '').trim(),
+      text: String(opts.text || '').slice(0, 20000),
+      system: systemPrompt(opts.catalog, opts.rooms),
+      images
     };
   }
 
   async function generatePlan(opts) {
     const key = String(opts && opts.key || '').trim();
-    if (!key) return { ok: false, code: 'no-key', message: 'Нужен ключ Gemini. Разбор по правилам не запускался.' };
+    const folderId = String(opts && opts.folderId || '').trim();
+    if (!key || !folderId) return { ok: false, code: 'no-key', message: 'Нужны ключ и ID каталога Yandex AI Studio. Разбор по правилам не запускался.' };
+    const endpoint = opts && opts.endpoint;
+    if (!endpoint) return { ok: false, code: 'no-server', message: 'Нужен вход на домашний сервер: из браузера Yandex Cloud не открывается. Разбор по правилам не запускался.' };
     const fetchFn = (opts && opts.fetch) || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
-    if (typeof fetchFn !== 'function') return { ok: false, code: 'no-fetch', message: 'В этом браузере нет запроса к Gemini.' };
-    const body = JSON.stringify(requestBody(opts.text, opts.images, opts.catalog, opts.rooms));
-    let response = null;
-    let used = '';
-    for (let n = 0; n < MODELS.length; n++) {
-      used = MODELS[n];
-      response = await fetchFn(endpoint(used), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-        body
-      });
-      if (response && response.status === 404 && n === 0) continue;
-      break;
-    }
+    if (typeof fetchFn !== 'function') return { ok: false, code: 'no-fetch', message: 'В этом браузере нет запроса к серверу.' };
+    const sent = proxyBody(opts);
+    const response = await fetchFn(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: opts.authorization || '',
+        'X-Yandex-Api-Key': key
+      },
+      body: JSON.stringify(sent)
+    });
     if (!response || !response.ok) {
       const status = response && response.status;
-      return { ok: false, code: 'http', message: 'Gemini не разобрал запрос' + (status ? ' (' + status + ')' : '') + '. Разбор по правилам не запускался.' };
+      return { ok: false, code: 'http', message: 'Yandex не разобрал запрос' + (status ? ' (' + status + ')' : '') + '. Разбор по правилам не запускался.' };
     }
     const payload = await response.json();
-    const parts = payload && payload.candidates && payload.candidates[0] && payload.candidates[0].content && payload.candidates[0].content.parts;
-    const text = (parts || []).map(part => part && part.text || '').join('');
-    if (!text) return { ok: false, code: 'empty', message: 'Gemini вернул пустой ответ. Разбор по правилам не запускался.' };
+    const text = payload && (payload.text || '');
+    if (!String(text).trim()) return { ok: false, code: 'empty', message: 'Yandex вернул пустой ответ. Разбор по правилам не запускался.' };
     try {
-      return { ok: true, model: used, plan: planFromModel(text, opts.catalog) };
+      return { ok: true, model: payload.model || (sent.images.length ? VISION_MODEL : TEXT_MODEL), plan: planFromModel(text, opts.catalog), sent };
     } catch (e) {
-      return { ok: false, code: 'json', message: 'Ответ Gemini не разобран как смета. Разбор по правилам не запускался.' };
+      return { ok: false, code: 'json', message: 'Ответ Yandex не разобран как смета. Разбор по правилам не запускался.' };
     }
   }
 
@@ -243,7 +242,7 @@
   }
 
   return {
-    KEY_NAME, MODELS, MAX_BYTES, MAX_PDF_PAGES, MAX_IMAGES,
-    planFromModel, generatePlan, systemPrompt, fileProblem, fileKind, endpoint
+    KEY_NAME, FOLDER_NAME, TEXT_MODEL, VISION_MODEL, MAX_BYTES, MAX_PDF_PAGES, MAX_IMAGES,
+    planFromModel, generatePlan, systemPrompt, fileProblem, fileKind, proxyBody
   };
 });

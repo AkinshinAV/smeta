@@ -46,6 +46,12 @@ try {
 
   const workBefore = await page.evaluate(() => document.getElementById('libView').innerText);
   ok('рабочий список показывает оба объекта и обе сметы', workBefore.includes('Демо-дом') && workBefore.includes('Второй дом') && workBefore.includes('Смета № 1') && workBefore.includes('Смета № 2') && !workBefore.includes('Архив объектов'), workBefore.slice(0, 400));
+  const searchLabel = await page.evaluate(() => {
+    const label = document.querySelector('label.libsearch');
+    const input = document.getElementById('libQ');
+    return { text: label ? label.childNodes[0].textContent.trim() : '', placeholder: input ? input.placeholder : 'missing' };
+  });
+  ok('у поиска подпись снаружи поля', searchLabel.text === 'Поиск' && searchLabel.placeholder === '', JSON.stringify(searchLabel));
   const serverClosed = await page.evaluate(() => {
     const det = [...document.querySelectorAll('#libView details')].find(d => (d.querySelector('summary') || {}).textContent.includes('Подключение сервера'));
     const url = document.getElementById('srvUrl');
@@ -115,6 +121,12 @@ try {
     table: document.querySelector('#measure table') ? document.querySelector('#measure table').innerText : ''
   }));
   ok('добавление помещений с параметров оставляет вкладку замера', stayed.tab === 'p' && stayed.names.join(',') === 'Комната,Кухня,Электрика' && stayed.catalog === 0 && stayed.table.includes('Помещение') && stayed.table.includes('без размеров'), JSON.stringify(stayed.names) + ' ' + stayed.table.slice(0, 180));
+  const noType = await page.evaluate(() => ({
+    select: !!document.querySelector('#measure select'),
+    tabs: document.getElementById('tabs').innerText,
+    presets: [...document.querySelectorAll('#measure button')].some(b => ['Кухня', 'Ванная', 'Туалет', 'Коридор'].includes(b.textContent.trim()))
+  }));
+  ok('при создании помещения нет выбора типа', noType.select === false && !noType.tabs.includes('+ Электрика') && noType.presets === false, JSON.stringify(noType));
 
   await page.evaluate(() => {
     const set = (k, v) => {
@@ -129,7 +141,7 @@ try {
     set('slopes', '6.5');
   });
   const geoRow = await page.evaluate(() => {
-    const cells = [...document.querySelectorAll('#measure tr')].find(tr => tr.innerText.includes('Комната'));
+    const cells = [...document.querySelectorAll('#measure tr')].find(tr => (tr.querySelector('input[data-k="name"]') || {}).value === 'Комната');
     const g = geo(S.rooms[0]);
     return { tab: S.tab, text: cells ? cells.innerText : '', floor: g.floor, perim: g.perim, walls: g.walls };
   });
