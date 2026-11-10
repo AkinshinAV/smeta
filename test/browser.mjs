@@ -81,6 +81,7 @@ try {
   ok('ручная площадь пола', g2.floor === 5.45 && g2.walls === 42.06, JSON.stringify(g2));
   await page.evaluate(() => { S.rooms[0].floor = ''; (S.rooms[0].works||[]).forEach(w => { if (w.auto) w.qty = geo(S.rooms[0])[w.base]; }); save(); render(); });
 
+  await page.evaluate(() => { const d = document.getElementById('assistDet'); if (d) d.open = true; });
   await page.click('#assist-text');
   await page.type('#assist-text', 'Кухня 12 м2, снять обои, шпаклевать стены 35 м2 и покрасить в 2 слоя, уложить ламинат');
   await page.click('#assist-run');

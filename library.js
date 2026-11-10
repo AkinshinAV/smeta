@@ -189,9 +189,9 @@
   function ensureActive(lib) {
     const objects = lib.objects || [];
     let obj = findObject(lib, lib.activeObjectId);
-    if (!obj) obj = objects.find(o => !o.archived) || objects[0] || null;
+    if (!obj || obj.archived) obj = objects.find(o => !o.archived) || null;
     let est = obj && findEstimate(obj, lib.activeEstimateId);
-    if (!est && obj) est = obj.estimates.find(e => !e.archived) || obj.estimates[0] || null;
+    if ((!est || est.archived) && obj) est = (obj.estimates || []).find(e => !e.archived) || null;
     lib.activeObjectId = obj ? obj.id : '';
     lib.activeEstimateId = est ? est.id : '';
     return lib;
@@ -430,12 +430,18 @@
     obj.updated = ts;
     if (lib.activeObjectId !== id) return null;
     const next = (lib.objects || []).find(o => !o.archived);
-    if (next) {
-      const est = next.estimates.find(e => !e.archived) || next.estimates[0];
-      return activateEstimate(lib, next.id, est.id);
+    if (!next) {
+      lib.activeObjectId = '';
+      lib.activeEstimateId = '';
+      return null;
     }
-    const created = addObject(lib, {}, blank, idFactory, nowFn);
-    return created.estimates[0].estimate;
+    const est = (next.estimates || []).find(e => !e.archived);
+    if (!est) {
+      lib.activeObjectId = next.id;
+      lib.activeEstimateId = '';
+      return null;
+    }
+    return activateEstimate(lib, next.id, est.id);
   }
 
   function restoreObject(lib, id, nowFn) {
@@ -458,10 +464,12 @@
     obj.dirty = true;
     obj.updated = ts;
     if (lib.activeObjectId !== objectId || lib.activeEstimateId !== estimateId) return null;
-    const next = obj.estimates.find(e => !e.archived);
-    if (next) return activateEstimate(lib, objectId, next.id);
-    const created = addEstimate(lib, objectId, blank, idFactory, nowFn);
-    return created.estimate;
+    const next = (obj.estimates || []).find(e => !e.archived);
+    if (!next) {
+      lib.activeEstimateId = '';
+      return null;
+    }
+    return activateEstimate(lib, objectId, next.id);
   }
 
   function restoreEstimate(lib, objectId, estimateId, nowFn) {
