@@ -8,62 +8,83 @@
 @font-face{font-family:'Liberation Serif';src:url('fonts/LiberationSerif-Italic.ttf') format('truetype');font-weight:400;font-style:italic}
 @font-face{font-family:'Liberation Serif';src:url('fonts/LiberationSerif-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic}
 *{box-sizing:border-box}
-body{font-family:Jost,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#eef1f5;color:#1d2533;font-size:14px}
-.topbar{background:#1b2a41;color:#fff;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.topbar h1{font-size:16px;margin:0 auto 0 0;font-weight:600}
-button{background:#2f6fde;color:#fff;border:0;border-radius:5px;padding:7px 12px;cursor:pointer;font-size:13px;font-family:inherit}
-button.sec{background:#e4e9f1;color:#1d2533}button.del{background:#d9534f}
-.tabs{background:#24344d;display:flex;flex-wrap:wrap;gap:0;padding:0 6px 0 0;align-items:stretch}
-.tabs button{background:transparent;color:#c5d0de;border-radius:0;padding:10px 14px;font-size:13px;border-bottom:3px solid transparent}
-.tabs button.on{background:#2c4060;color:#fff;border-bottom-color:#4ea0ff}
-.tabs button .sm{display:block;font-size:11px;opacity:.85}
-.tabs .add{color:#9ad0ff}
-.dimstrip{background:#f4f7fb;padding:8px 16px;font-size:13px;border-bottom:1px solid #dde3ec;display:flex;gap:14px;flex-wrap:wrap}
-.dimstrip b{font-weight:600}
-main{max-width:1180px;margin:0 auto;padding:14px}
-.card{background:#fff;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 3px #0001}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
-label{display:flex;flex-direction:column;font-size:12px;color:#5b6576;gap:3px}
-input,select,textarea{padding:6px;border:1px solid #c9d1dd;border-radius:5px;font-size:14px;width:100%;font-family:inherit}
-table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px solid #e6eaf0;text-align:left}th{font-size:12px;color:#5b6576}
-td input{padding:3px;width:90px}.num{text-align:right;white-space:nowrap}
-.stats{display:flex;gap:14px;flex-wrap:wrap;background:#eef3fb;padding:8px;border-radius:6px;margin:8px 0}
-.tot{font-weight:600}.big{font-size:17px}.muted{color:#8a93a3;font-size:12px}
-.sech{display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;font-weight:600;font-size:15px;border-bottom:1px solid #edf0f5}
-.sech .sum{margin-left:auto;color:#3d5afe}
-.surf{background:#d8efe8;padding:6px 10px;font-weight:600;font-size:13px;display:flex;justify-content:space-between}
-.surf[data-s="Стены"]{background:#d6edd8}.surf[data-s="Потолки"]{background:#d6e4f5}
-.surf[data-s="Откосы"],.surf[data-s="откосы"]{background:#e6def3}.surf[data-s="Сантехника"]{background:#f8e0d0}
-.surf[data-s="Двери"],.surf[data-s="Прочие"],.surf[data-s="Другое"],.surf[data-s="Окна"]{background:#ececec}
-.wr{display:grid;grid-template-columns:36px 1fr auto;gap:8px;align-items:center;padding:5px 8px;border-bottom:1px solid #f0f2f6}
-.wr.on{background:#ffe6a0}
-.ck{flex-direction:row;align-items:center;gap:8px;color:#1d2533;font-size:14px;cursor:pointer;margin:0}
-.ck input[type=checkbox]{width:24px;height:24px;flex:none;accent-color:#2f6fde}
-.ed{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+html,body{max-width:100%;overflow-x:hidden}
+body{font-family:Jost,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#e7edf4;color:#1c2838;font-size:14px;line-height:1.35}
+.topbar{position:sticky;top:0;z-index:20;background:#f6f8fb;color:#1c2838;border-bottom:1px solid #d5deea;padding:8px 14px 10px;display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap}
+.tb-brand{display:flex;flex-direction:column;gap:4px;margin-right:auto;min-width:min(100%,240px)}
+.tb-title{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.topbar h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em;color:#16325c}
+.tb-actions,.tb-more{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tb-split{width:1px;height:22px;background:#d5deea;margin:0 2px}
+button{background:#1d6fe8;color:#fff;border:1px solid #1d6fe8;border-radius:7px;padding:7px 12px;cursor:pointer;font-size:13px;font-weight:650;font-family:inherit;line-height:1.2}
+button:hover{filter:brightness(1.05)}
+button.sec,button.ghost{background:#fff;color:#24344d;border-color:#d0d8e4}
+button.sec:hover,button.ghost:hover{background:#f3f6fb}
+button.del{background:#fff;color:#b42318;border-color:#f0c2be}
+.filebtn{display:inline-flex;align-items:center;border-radius:7px;padding:7px 12px;font-size:13px;font-weight:650;cursor:pointer;background:#fff;color:#24344d;border:1px solid #d0d8e4;line-height:1.2}
+.filebtn.pdf{background:#0e7c66;color:#fff;border-color:#0c6b58;box-shadow:0 1px 0 #0002}
+.filebtn input{display:none}
+.tabs{background:#e4ebf3;display:flex;flex-wrap:nowrap;gap:2px;padding:6px 8px 0;align-items:stretch;overflow-x:auto;border-bottom:1px solid #d5deea}
+.tabs button{background:transparent;color:#3d4d63;border:0;border-radius:8px 8px 0 0;padding:7px 12px 6px;font-size:13px;font-weight:650;min-width:92px;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button.on{background:#fff;color:#143a6b;border-bottom-color:#1d6fe8}
+.tabs button .sm{display:block;margin-top:1px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:#5b7190}
+.tabs button.on .sm{color:#1d6fe8}
+.tabs .add{color:#1d6fe8;min-width:auto;font-weight:700}
+.dimstrip{background:#fff;padding:8px 16px;font-size:13px;border-bottom:1px solid #e1e8f0;display:flex;gap:14px;flex-wrap:wrap;color:#3d4d63}
+.dimstrip b{font-weight:700;color:#16325c}
+main{max-width:1240px;margin:0 auto;padding:16px}
+.card{background:#fff;border:1px solid #e1e8f0;border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 2px #16325c0a}
+.card h3{margin:0 0 10px;font-size:16px;letter-spacing:-.01em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+label{display:flex;flex-direction:column;font-size:12px;font-weight:650;color:#5c6b80;gap:4px}
+input,select,textarea{padding:7px 8px;border:1px solid #d0d8e4;border-radius:7px;font-size:14px;width:100%;font-family:inherit;background:#fff;color:#1c2838}
+input:focus,select:focus,textarea:focus{outline:2px solid #c9ddfb;border-color:#1d6fe8}
+table{width:100%;border-collapse:collapse}td,th{padding:6px 5px;border-bottom:1px solid #e8eef5;text-align:left}th{font-size:12px;color:#5c6b80;font-weight:650}
+td input{padding:4px 6px;width:90px}.num{text-align:right;white-space:nowrap}
+.stats{display:flex;gap:14px;flex-wrap:wrap;background:#f4f7fb;padding:10px 12px;border-radius:8px;margin:8px 0}
+.tot{font-weight:700}.big{font-size:17px}.muted{color:#6b7c90;font-size:12px;font-weight:500}
+.sech{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;font-weight:700;font-size:14px;background:#1c6b74;color:#fff}
+.sech .sum{margin-left:auto;color:#fff;font-variant-numeric:tabular-nums}
+.sech .muted{color:#d7eef0}
+.catsec:nth-child(3n+2) .sech{background:#1e4f8a}
+.catsec:nth-child(3n) .sech{background:#3d5c45}
+.surf{background:#d9f0df;padding:6px 12px;font-weight:700;font-size:13px;display:flex;justify-content:space-between;color:#163228}
+.surf[data-s="Стены"]{background:#d7efd4}.surf[data-s="Потолки"]{background:#d6e6f8}
+.surf[data-s="Откосы"],.surf[data-s="откосы"]{background:#e7def6}.surf[data-s="Сантехника"]{background:#f8e4d4}
+.surf[data-s="Двери"],.surf[data-s="Прочие"],.surf[data-s="Другое"],.surf[data-s="Окна"]{background:#eceff3}
+.wr{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:center;padding:3px 8px;border-bottom:1px solid #eef2f6;min-height:34px}
+.wr:hover{background:#f6f9fc}
+.wr.on{background:#ffe08a;box-shadow:inset 3px 0 0 #d89a00}
+.wr.on:hover{background:#ffd56a}
+.ck{flex-direction:row;align-items:center;gap:8px;color:#1c2838;font-size:14px;font-weight:500;cursor:pointer;margin:0}
+.ck input[type=checkbox]{width:22px;height:22px;flex:none;accent-color:#1d6fe8}
+.ed{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;font-variant-numeric:tabular-nums}
 .ed input{width:78px}.nm{width:240px!important}
 .wmeta{display:flex;gap:10px;align-items:baseline;font-variant-numeric:tabular-nums}
 .wmeta .pr{width:58px;text-align:right}.wmeta .qt{min-width:64px;text-align:right}
-.cnt{display:inline-block;min-width:22px;text-align:center;border-radius:11px;background:#e4e9f1;font-size:12px;padding:1px 6px}.cnt.has{background:#2f6fde;color:#fff}
-.catsec{border:1px solid #e4e8ef;border-radius:8px;margin:0 0 8px;overflow:hidden}
+.cnt{display:inline-block;min-width:22px;text-align:center;border-radius:11px;background:#ffffff33;color:#fff;font-size:12px;padding:1px 6px}.cnt.has{background:#fff;color:#1c6b74}
+.catsec{border:1px solid #e1e8f0;border-radius:10px;margin:0 0 8px;overflow:hidden;background:#fff}
 .search{display:flex;gap:8px;margin:8px 0 12px;align-items:center}
 .search input{flex:1}
-html,body{max-width:100%;overflow-x:hidden}
 input.bad{border-color:#d9534f;background:#ffe8e6}
-.warn{background:#fff3cd;border:1px solid #f0c36d;color:#6b4e00;padding:8px 10px;border-radius:6px;margin:8px 0;font-size:13px;line-height:1.4}
+.warn{background:#fff3cd;border:1px solid #f0c36d;color:#6b4e00;padding:8px 10px;border-radius:8px;margin:8px 0;font-size:13px;line-height:1.4}
 .svod-cards{display:none}
-.svod-card{border:1px solid #e6eaf0;border-radius:8px;padding:10px;margin:0 0 8px}
+.svod-card{border:1px solid #e1e8f0;border-radius:10px;padding:10px;margin:0 0 8px;background:#fff}
 .svod-card h4{margin:0 0 6px;font-size:15px}
 .svod-card .row{display:flex;justify-content:space-between;gap:8px;padding:3px 0}
 .price-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;align-items:center}
+#summary table{background:#fff;border-radius:8px;overflow:hidden}
+#summary tr.tot td,#summary .tot{background:#e8f2fb}
 @media(max-width:700px){
-  main{padding:6px}
+  main{padding:8px}
   .card{padding:10px;overflow:hidden}
-  input,button{font-size:16px}
-  .wr{grid-template-columns:36px minmax(0,1fr);align-items:start}
-  .wr .ed{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:8px;padding:6px 0 4px 36px;width:100%}
+  input,button,.filebtn{font-size:16px}
+  .wr{grid-template-columns:34px minmax(0,1fr);align-items:start}
+  .wr .ed{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:8px;padding:6px 0 4px 34px;width:100%}
   .ed input{width:88px;min-width:72px;max-width:45%;font-size:16px}
   .topbar,.tabs{max-width:100%}
-  .tabs button{padding:8px 10px;font-size:12px}
+  .tb-brand{min-width:100%}
+  .tabs button{padding:8px 10px;font-size:12px;min-width:76px}
   #summary table.svod-table{display:none}
   .svod-cards{display:block}
   .grid{grid-template-columns:1fr 1fr}
@@ -142,7 +163,9 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 .anote{background:#fff8e6;border:1px solid #f0e0b0;padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px}
 .aerr{background:#fdecea;border:1px solid #f5c2c0;padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px}
 .aok{background:#e8f6ee;border:1px solid #b7e0c2;padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px}
-.saveok{color:#d8ffe4;font-size:12px}.savewait{color:#ffe7a3;font-size:12px;font-weight:700}.savebad{color:#ffd0cc;font-size:12px;font-weight:700}
+#saveState{display:inline-flex;align-items:center;max-width:100%;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;line-height:1.35}
+.saveok{background:#e5f6ec;color:#0d6b3a}.savewait{background:#fff4d6;color:#8a5a00}.savebad{background:#fde8e6;color:#9b1c1c}
+#buildTag{color:#6b7c90;font-size:11px;font-weight:650}
 .printbar{position:sticky;top:0;z-index:30;background:#14301f;color:#fff;padding:8px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .printbar[hidden]{display:none!important}
 body.print-preview .topbar,body.print-preview .tabs,body.print-preview .dimstrip,body.print-preview main,body.print-preview .preview-banner{display:none!important}
@@ -170,16 +193,23 @@ body.lib-open #libView{display:block}
 <button type="button" onclick="window.print()">Печать</button>
 <button type="button" class="sec" onclick="closePrintPreview()">Закрыть просмотр</button>
 </div>
-<div class="topbar"><h1 id="docTitle">Смета ремонта</h1>
-<span id="saveState" class="saveok">Сохранено в этом браузере</span>
-<span id="buildTag" class="muted" style="color:#c5d0de">сборка 20261110b</span>
-<button onclick="showLib()" class="sec">Объекты</button>
-<button onclick="newObject()" class="sec">Новый объект</button>
-<button onclick="newObj()" class="sec">Новая смета</button>
-<button onclick="exportJSON()" class="sec">Экспорт JSON</button>
-<label style="color:#fff;flex-direction:row;align-items:center"><span class="sec" style="background:#e4e9f1;color:#1d2533;padding:7px 12px;border-radius:6px;cursor:pointer">Импорт JSON</span><input id="imp-smeta" type="file" accept=".json" onchange="importJSON(this)" style="display:none"></label>
-<label style="color:#fff;flex-direction:row;align-items:center"><span class="sec" style="background:#e4e9f1;color:#1d2533;padding:7px 12px;border-radius:6px;cursor:pointer">PDF сметы</span><input id="imp-pdf" type="file" accept="application/pdf,.pdf" onchange="importPdfFile(this)" style="display:none"></label>
-<button onclick="doPrint('sm')">Смета / PDF</button><button onclick="doPrint('dog')">Договор</button></div>
+<div class="topbar">
+<div class="tb-brand"><div class="tb-title"><h1 id="docTitle">Смета ремонта</h1><span id="buildTag">сборка 20261110c</span></div>
+<span id="saveState" class="saveok">Сохранено в этом браузере</span></div>
+<div class="tb-actions">
+<button type="button" onclick="showLib()" class="ghost">Объекты</button>
+<button type="button" onclick="newObj()">Новая смета</button>
+<label class="filebtn pdf">Импорт PDF<input id="imp-pdf" type="file" accept="application/pdf,.pdf" onchange="importPdfFile(this)"></label>
+</div>
+<div class="tb-more">
+<button type="button" onclick="newObject()" class="ghost">Новый объект</button>
+<button type="button" onclick="exportJSON()" class="ghost">Экспорт JSON</button>
+<label class="filebtn">Импорт JSON<input id="imp-smeta" type="file" accept=".json" onchange="importJSON(this)"></label>
+<span class="tb-split"></span>
+<button type="button" onclick="doPrint('sm')" class="ghost">Смета / PDF</button>
+<button type="button" onclick="doPrint('dog')" class="ghost">Договор</button>
+</div>
+</div>
 <div class="tabs" id="tabs"></div><div class="dimstrip" id="dims"></div>
 <div id="libView"></div>
 <div id="pdfBox" class="impbox" hidden><div class="card" style="max-width:920px;width:100%;max-height:90vh;overflow:auto"><h3 style="margin-top:0">Черновик из PDF</h3><p id="pdfMsg" class="muted"></p><div id="pdfRows"></div><label>Текст, если в PDF нет текстового слоя<textarea id="pdfPaste" rows="4" placeholder="Название, цена, количество и единица в одной строке. Например: Снятие обоев 99 р. 12 м2 1188 р."></textarea></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" onclick="parsePdfPaste()">Разобрать вставленный текст</button><button type="button" onclick="applyPdf('new')">Новой сметой</button><button type="button" class="sec" onclick="applyPdf('replace')">Заменить открытую смету</button><button type="button" class="sec" onclick="closePdf()">Отмена</button></div></div></div>
@@ -224,11 +254,11 @@ body.lib-open #libView{display:block}
 <div id="panel-price" style="display:none"></div>
 <p class="muted">Цены в каталоге взяты из образцов смет Remfy (14.10.2026 и 17.10.2026). Позиции без цены нужно заполнить вручную. Данные сохраняются в этом браузере автоматически. Подбор по описанию сравнивает фразу только с этим каталогом.</p>
 </main><div id="print"></div>
-<script src="library.js?v=20261110b"></script>
-<script src="sync.js?v=20261110b"></script>
-<script src="pdf-import.js?v=20261110b"></script>
-<script src="smeta-calc.js?v=20261110b"></script>
-<script src="assist.js?v=20261110b"></script>
+<script src="library.js?v=20261110c"></script>
+<script src="sync.js?v=20261110c"></script>
+<script src="pdf-import.js?v=20261110c"></script>
+<script src="smeta-calc.js?v=20261110c"></script>
+<script src="assist.js?v=20261110c"></script>
 <script>
 // [раздел, поверхность, название, ед., цена, база количества]  база: floor|walls|perim|slopes|ceil|manual ; null цена = ввести вручную
 const SP=['Электромонтажные работы','Сантехнические работы'];
@@ -800,7 +830,7 @@ function closePdf(){pdfDraft=null;const box=document.getElementById('pdfBox');if
 function renderPdf(){const box=document.getElementById('pdfBox');const msg=document.getElementById('pdfMsg');const host=document.getElementById('pdfRows');if(!box||!host)return;box.hidden=false;const rows=pdfDraft&&pdfDraft.rows||[];const warns=(pdfDraft&&pdfDraft.warnings||[]).map(w=>esc(w)).join(' ');if(msg)msg.textContent='Сборка '+BUILD+'. Файл читается только в этом браузере и никуда не отправляется. Несопоставленные строки не отмечаются сами. Итоги, шапка и сводная в позиции не попадают.'+(warns?(' '+warns):'');host.innerHTML=rows.length?`<table><tr><th></th><th>Помещение</th><th>Позиция</th><th>Кол-во</th><th>Цена</th><th>Каталог</th></tr>${rows.map((r,i)=>`<tr><td><input type="checkbox" ${r.include?'checked':''} onchange="pdfEdit(${i},'include',this.checked)"></td><td><input value="${esc(r.room)}" oninput="pdfEdit(${i},'room',this.value)"></td><td><input value="${esc(r.name)}" oninput="pdfEdit(${i},'name',this.value)" onchange="renderPdf()"></td><td><input value="${esc(r.qty)}" oninput="pdfEdit(${i},'qty',this.value)" style="width:70px"></td><td><input value="${esc(r.price)}" oninput="pdfEdit(${i},'price',this.value)" style="width:80px"></td><td>${r.confident&&r.useCatalog?'<span class="aok">каталог</span>':`<span class="aerr">не сопоставлено</span>`}${r.catalog?` <label class="ck"><input type="checkbox" ${r.useCatalog?'checked':''} onchange="pdfEdit(${i},'useCatalog',this.checked)"> взять «${esc(r.catalog.name)}»</label>`:''}</td></tr>`).join('')}</table>`:'<p class="muted">Позиций пока нет.</p>'}
 function pdfEdit(i,field,value){if(!pdfDraft||!pdfDraft.rows[i])return;const row=pdfDraft.rows[i];if(field==='include'||field==='useCatalog'){row[field]=!!value;if(field==='useCatalog'&&value)row.include=true;renderPdf();return}if(field==='qty'||field==='price'){const n=String(value).trim().replace(/\s/g,'').replace(',','.');row[field]=n===''?null:(/^\d+(\.\d+)?$/.test(n)?Math.round(Number(n)*100)/100:null);return}row[field]=String(value);if(field==='name'){const found=SmetaPdf.matchCatalog(row.name,row.unit,pdfCatalog());row.catalog=found.item;row.confident=found.confident;row.score=found.score;if(!found.confident)row.useCatalog=false}}
 function openPdfDraft(parsed){pdfDraft=parsed||{rows:[],warnings:[]};renderPdf()}
-const BUILD='20261110b';
+const BUILD='20261110c';
 async function readPdfPages(data){let pdfjs;try{pdfjs=await import('./vendor/pdfjs/pdf.min.mjs?v='+BUILD)}catch(e){return {ok:false,code:'missing'}}pdfjs.GlobalWorkerOptions.workerSrc=new URL('vendor/pdfjs/pdf.worker.min.mjs?v='+BUILD,document.baseURI).href;const load=async(disableWorker)=>pdfjs.getDocument({data:data.slice(),disableWorker:!!disableWorker}).promise;let doc;try{doc=await load(false)}catch(e){const name=String(e&&e.name||'');if(name==='PasswordException'||/password/i.test(String(e&&e.message||'')))return {ok:false,code:'password'};try{doc=await load(true)}catch(e2){const name2=String(e2&&e2.name||'');if(name2==='PasswordException'||/password/i.test(String(e2&&e2.message||'')))return {ok:false,code:'password'};return {ok:false,code:'broken'}}}try{const pages=[];let chars=0;const limit=Math.min(doc.numPages,SmetaPdf.MAX_PAGES);for(let i=1;i<=limit;i++){const page=await doc.getPage(i);const content=await page.getTextContent();const items=(content.items||[]).filter(it=>it&&it.str).map(it=>({str:it.str,x:it.transform[4],y:it.transform[5]}));const lines=SmetaPdf.linesFromItems(items);chars+=lines.join('').length;pages.push(lines)}if(chars<15)return {ok:false,code:'empty'};return {ok:true,pages}}catch(e){return {ok:false,code:'broken'}}}
 async function importPdfFile(inp){const file=inp.files&&inp.files[0];inp.value='';if(!file)return;const problem=SmetaPdf.fileProblem(file);if(problem){alert(problem);return}let bytes;try{bytes=new Uint8Array(await file.arrayBuffer())}catch(e){alert(SmetaPdf.explainExtract('broken'));return}const read=await readPdfPages(bytes);if(!read.ok){pdfDraft={rows:[],warnings:[SmetaPdf.explainExtract(read.code)]};renderPdf();return}openPdfDraft(SmetaPdf.parsePages(read.pages,pdfCatalog()))}
 function parsePdfPaste(){const text=(document.getElementById('pdfPaste')||{}).value||'';if(!String(text).trim()){alert('Вставьте текст сметы.');return}const parsed=SmetaPdf.parsePages([text],pdfCatalog());if(!parsed.rows.length){alert('В тексте нет строк вида «название, цена, количество, единица». Шапка и итоги пропускаются.');return}openPdfDraft(parsed)}
