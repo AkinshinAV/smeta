@@ -151,12 +151,6 @@
       if (action.op === 'replace-all') {
         lib.objects = (action.snapshot.objects || []).map(materializeObject);
         lib.v = 2;
-        if (!lib.objects.some(o => o.id === lib.activeObjectId)) {
-          const first = lib.objects.find(o => !o.archived) || lib.objects[0];
-          lib.activeObjectId = first ? first.id : '';
-          const est = first && ((first.estimates || []).find(e => !e.archived) || first.estimates[0]);
-          lib.activeEstimateId = est ? est.id : '';
-        }
       } else if (action.op === 'pull-object') {
         const obj = findObject(lib, action.id);
         if (obj && !obj.dirty && !obj.syncConflict) applyCard(obj, action.server);
@@ -190,6 +184,23 @@
         if (obj && !findEstimate(obj, action.server.id)) obj.estimates.push(materializeEstimate(action.server));
       }
     }
+    settleActive(lib);
+    return lib;
+  }
+
+  function settleActive(lib) {
+    const obj = findObject(lib, lib.activeObjectId);
+    const est = obj && findEstimate(obj, lib.activeEstimateId);
+    if (obj && !obj.archived && est && !est.archived) return lib;
+    const next = objectsOf(lib).find(o => !o.archived && (o.estimates || []).some(e => !e.archived));
+    if (next) {
+      lib.activeObjectId = next.id;
+      lib.activeEstimateId = next.estimates.find(e => !e.archived).id;
+      return lib;
+    }
+    const bare = objectsOf(lib).find(o => !o.archived) || null;
+    lib.activeObjectId = bare ? bare.id : '';
+    lib.activeEstimateId = '';
     return lib;
   }
 
