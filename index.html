@@ -335,7 +335,7 @@ body.no-work .tabbar,body.no-work .tabs,body.no-work .dimstrip{display:none}
 <label class="filebtn">Импорт JSON<input id="imp-smeta" type="file" accept=".json" onchange="importJSON(this)"></label>
 <button type="button" onclick="doPrint('sm')">Смета / PDF</button>
 <button type="button" onclick="doPrint('dog')">Договор</button>
-<details id="aboutDet"><summary>О приложении</summary><p>Сборка <span id="buildTag">20261110m</span>. Список хранится на этом устройстве, пока сервер не подключён. Это не облако.</p></details>
+<details id="aboutDet"><summary>О приложении</summary><p>Сборка <span id="buildTag">20261110n</span>. Список хранится на этом устройстве, пока сервер не подключён. Это не облако.</p></details>
 <details id="serverDet"><summary>Подключение сервера</summary><div id="serverBox"></div></details>
 </div></details>
 </div>
@@ -388,12 +388,12 @@ body.no-work .tabbar,body.no-work .tabs,body.no-work .dimstrip{display:none}
 <div id="panel-price" style="display:none"></div>
 
 </main><div id="print"></div>
-<script src="library.js?v=20261110m"></script>
-<script src="sync.js?v=20261110m"></script>
-<script src="pdf-import.js?v=20261110m"></script>
-<script src="smeta-calc.js?v=20261110m"></script>
-<script src="assist.js?v=20261110m"></script>
-<script src="assist-ai.js?v=20261110m"></script>
+<script src="library.js?v=20261110n"></script>
+<script src="sync.js?v=20261110n"></script>
+<script src="pdf-import.js?v=20261110n"></script>
+<script src="smeta-calc.js?v=20261110n"></script>
+<script src="assist.js?v=20261110n"></script>
+<script src="assist-ai.js?v=20261110n"></script>
 <script>
 // [раздел, поверхность, название, ед., цена, база количества]  база: floor|walls|perim|slopes|ceil|manual ; null цена = ввести вручную
 const SP=['Электромонтажные работы','Сантехнические работы'];
@@ -416,7 +416,8 @@ function catalogBase(it){
   return 'manual';
 }
 const CAT=PRICE_DEF.map(it=>[it.s,it.u,it.name,it.un,it.p,catalogBase(it),it.n]);
-const SECTIONS=[...new Set(CAT.map(c=>c[0]))];
+const SECTIONS=[];
+PRICE_DEF.forEach(it=>{if(!SECTIONS.includes(it.s))SECTIONS.push(it.s)});
 const KEY='smeta_v1';let S;
 const r2=SmetaCalc.r2,fl=SmetaCalc.fl,num=SmetaCalc.num,parseUserNum=SmetaCalc.parseUserNum;
 function screenMoney(x){const n=fl(num(x));const sign=n<0?'−':'';const body=String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00a0');return sign+body+'\u00a0₽'}
@@ -543,26 +544,31 @@ function _render(){
  function claimPass(mode){CAT.forEach((c,ci)=>{if(claimed.has(ci))return;const name=normN(c[2]),sec=normN(c[0]),surf=normN(c[1]);for(const row of pending){if(used.has(row.i)||row.name!==name)continue;const ok=mode==='surf'?row.surf===surf:(mode==='sec'?row.sec===sec:true);if(!ok)continue;used.add(row.i);claimed.set(ci,row.i);return}})}
  claimPass('surf');claimPass('sec');claimPass('name');
  function nameHit(name){if(!smKeys)return true;const n=normN(name);return smKeys.some(k=>normN(String(k).split('\n').pop())===n)}
- const extras=[];(r.works||[]).forEach((w,i)=>{if(!used.has(i)&&w.sec&&!SECTIONS.includes(w.sec)&&!extras.includes(w.sec))extras.push(w.sec)});
- const secs=SECTIONS.concat(extras).map(sec=>{const rows=[];
-  CAT.forEach((c,ci)=>{if(c[0]!==sec)return;const wi=claimed.has(ci)?claimed.get(ci):-1;if(smKeys&&!nameHit(c[2]))return;if(qn&&!normN((c[6]||'')+' '+c[2]+' '+c[1]+' '+c[3]).includes(qn))return;rows.push([wi>=0?r.works[wi]:undefined,wi,ci,(c[6]?c[6]+' ':'')+c[2],c[1]])});
-  (r.works||[]).forEach((w,wi)=>{if(used.has(wi)||w.sec!==sec)return;if(smKeys&&!nameHit(w.name))return;if(qn&&!normN((w.n||'')+' '+w.name+' '+(w.surf||'')).includes(qn))return;rows.push([w,wi,-1,w.name,w.surf||'своя'])});
+ function paintSec(sec, rows, own){
   if((smKeys||qn)&&!rows.length)return '';
+  if(!rows.length)return '';
   let n=0,sum=0;rows.forEach(x=>{if(x[1]>=0){n++;sum+=lineSum(x[0])}});
   const open=!!(smKeys||qn||r.openS[sec]);
   let body='';
-  if(open){const by={};rows.forEach(x=>{(by[x[4]]=by[x[4]]||[]).push(x)});Object.keys(by).forEach(surf=>{const ss=by[surf].reduce((a,x)=>a+(x[1]>=0?lineSum(x[0]):0),0);body+=`<div class="surf" data-s="${esc(surf)}">${esc(surf)}${ss?`<span>${money(ss)}</span>`:''}</div>`+by[surf].map(x=>row(...x)).join('')});body+=`<div style="padding:6px 10px"><button class="sec" type="button" onclick="addCustom(${ri},${JSON.stringify(sec)})">+ Своя работа</button></div>`}
-  const key=JSON.stringify(sec);
-  return `<div class="catsec"><div class="sech" onclick="S.rooms[${ri}].openS[${key}]=!S.rooms[${ri}].openS[${key}];save();render()">${open?'▾':'▸'} ${esc(sec)}${SP.includes(sec)?' <span class="spec">спецмонтаж</span>':''}${n?` <span class="cnt has">${n}</span><span class="sum">${money(sum)}</span>`:''}</div>
-   <div class="secbody" style="display:${open?'block':'none'}" data-open="${open?1:0}">${body}</div></div>`}).join('');
+  if(open){const by={};rows.forEach(x=>{(by[x[4]]=by[x[4]]||[]).push(x)});Object.keys(by).forEach(surf=>{const ss=by[surf].reduce((a,x)=>a+(x[1]>=0?lineSum(x[0]):0),0);body+=`<div class="surf" data-s="${esc(surf)}">${esc(surf)}${ss?`<span>${money(ss)}</span>`:''}</div>`+by[surf].map(x=>row(...x)).join('')});if(!own)body+=`<div style="padding:6px 10px"><button class="sec add-own" type="button" data-ri="${ri}" data-sec="${esc(sec)}">+ Своя работа</button></div>`}
+  return `<div class="catsec"><div class="sech" data-ri="${ri}" data-sec="${esc(sec)}">${open?'▾':'▸'} ${esc(sec)}${n?` <span class="cnt has">${n}</span><span class="sum">${money(sum)}</span>`:''}</div>
+   <div class="secbody" style="display:${open?'block':'none'}" data-open="${open?1:0}">${body}</div></div>`}
+ const secs=SECTIONS.map(sec=>{const rows=[];
+  CAT.forEach((c,ci)=>{if(c[0]!==sec)return;const wi=claimed.has(ci)?claimed.get(ci):-1;if(smKeys&&!nameHit(c[2]))return;if(qn&&!normN((c[6]||'')+' '+c[2]+' '+c[1]+' '+c[3]).includes(qn))return;rows.push([wi>=0?r.works[wi]:undefined,wi,ci,(c[6]?c[6]+' ':'')+c[2],c[1]])});
+  return paintSec(sec, rows, false)}).join('');
+ const ownRows=[];
+ (r.works||[]).forEach((w,wi)=>{if(used.has(wi))return;if(smKeys&&!nameHit(w.name))return;if(qn&&!normN((w.n||'')+' '+w.name+' '+(w.surf||'')).includes(qn))return;ownRows.push([w,wi,-1,w.name,w.surf||'своя'])});
+ const own=paintSec('Свои работы', ownRows, true);
  const marked=(r.works||[]).filter(w=>w&&w.name).length;
  document.getElementById('rooms').innerHTML=`<div class="card"><div class="roombar"><input value="${esc(r.name)}" data-r="${ri}" data-k="name" class="rin">
   <details class="rowmenu"><summary aria-label="Действия с помещением">⋯</summary><div class="more-menu"><button type="button" onclick="copyRoom(${ri})">Копировать</button><button type="button" onclick="if(confirm('Удалить помещение?')){S.rooms.splice(${ri},1);S.tab='p';save();render()}">Удалить</button></div></details></div>
   <div class="search"><div class="filt"><button type="button" class="${smKeys?'':'on'}" onclick="showAll()">Все</button><button type="button" class="${smKeys?'on':''}" onclick="showMarked()" title="Берёт отмеченные работы этой комнаты и показывает их в другой без галочек">См.${marked?` (${marked})`:''}</button></div><input id="q" placeholder="Поиск по справочнику..." value="${esc(q)}" oninput="onCatQuery()"></div>
-  ${secs}${roomWarns(r).map(w=>`<div class="warn">${esc(w)}</div>`).join('')}<div class="roomtot" id="rt${ri}"></div></div>`;
+  ${secs}${own}${roomWarns(r).map(w=>`<div class="warn">${esc(w)}</div>`).join('')}<div class="roomtot" id="rt${ri}"></div></div>`;
  document.querySelectorAll('.rin').forEach(e=>e.onchange=()=>setR(+e.dataset.r,e.dataset.k,e.value));
  document.querySelectorAll('.win').forEach(e=>{e.oninput=()=>setW(+e.dataset.r,+e.dataset.w,e.dataset.k,e.value);e.onchange=()=>{if(e.dataset.k==='name'){render();return}const p=parseUserNum(e.value,0,1e9);const w=S.rooms[+e.dataset.r].works[+e.dataset.w];w[e.dataset.k]=p.store;if(e.dataset.k==='qty')w.auto=false;save();e.value=p.store;e.classList.toggle('bad',p.bad);renderTotals()}});
  bindWorkRows();
+ document.querySelectorAll('#rooms .sech').forEach(el=>{el.addEventListener('click',()=>{const room=S.rooms[+el.dataset.ri];if(!room)return;const sec=el.getAttribute('data-sec');room.openS=room.openS||{};room.openS[sec]=!room.openS[sec];save();render()})});
+ document.querySelectorAll('#rooms .add-own').forEach(el=>{el.addEventListener('click',()=>addCustom(+el.dataset.ri, el.getAttribute('data-sec')))});
  const qEl=document.getElementById('q');if(qEl&&window.__qCaret!=null){qEl.focus();const n=Math.min(window.__qCaret,qEl.value.length);qEl.setSelectionRange(n,n);window.__qCaret=null}
  renderMeasure();
  renderTotals()}
@@ -965,7 +971,7 @@ function closePdf(){pdfDraft=null;const box=document.getElementById('pdfBox');if
 function renderPdf(){const box=document.getElementById('pdfBox');const msg=document.getElementById('pdfMsg');const host=document.getElementById('pdfRows');if(!box||!host)return;box.hidden=false;const rows=pdfDraft&&pdfDraft.rows||[];const warns=(pdfDraft&&pdfDraft.warnings||[]).map(w=>esc(w)).join(' ');if(msg)msg.textContent='Сборка '+BUILD+'. Файл читается только в этом браузере и никуда не отправляется. Несопоставленные строки не отмечаются сами. Итоги, шапка и сводная в позиции не попадают.'+(warns?(' '+warns):'');host.innerHTML=rows.length?`<table><tr><th></th><th>Помещение</th><th>Позиция</th><th>Кол-во</th><th>Цена</th><th>Каталог</th></tr>${rows.map((r,i)=>`<tr><td><input type="checkbox" ${r.include?'checked':''} onchange="pdfEdit(${i},'include',this.checked)"></td><td><input value="${esc(r.room)}" oninput="pdfEdit(${i},'room',this.value)"></td><td><input value="${esc(r.name)}" oninput="pdfEdit(${i},'name',this.value)" onchange="renderPdf()"></td><td><input value="${esc(r.qty)}" oninput="pdfEdit(${i},'qty',this.value)" style="width:70px"></td><td><input value="${esc(r.price)}" oninput="pdfEdit(${i},'price',this.value)" style="width:80px"></td><td>${r.confident&&r.useCatalog?'<span class="aok">каталог</span>':`<span class="aerr">не сопоставлено</span>`}${r.catalog?` <label class="ck"><input type="checkbox" ${r.useCatalog?'checked':''} onchange="pdfEdit(${i},'useCatalog',this.checked)"> взять «${esc(r.catalog.name)}»</label>`:''}</td></tr>`).join('')}</table>`:'<p class="muted">Позиций пока нет.</p>'}
 function pdfEdit(i,field,value){if(!pdfDraft||!pdfDraft.rows[i])return;const row=pdfDraft.rows[i];if(field==='include'||field==='useCatalog'){row[field]=!!value;if(field==='useCatalog'&&value)row.include=true;renderPdf();return}if(field==='qty'||field==='price'){const n=String(value).trim().replace(/\s/g,'').replace(',','.');row[field]=n===''?null:(/^\d+(\.\d+)?$/.test(n)?Math.round(Number(n)*100)/100:null);return}row[field]=String(value);if(field==='name'){const found=SmetaPdf.matchCatalog(row.name,row.unit,pdfCatalog());row.catalog=found.item;row.confident=found.confident;row.score=found.score;if(!found.confident)row.useCatalog=false}}
 function openPdfDraft(parsed){pdfDraft=parsed||{rows:[],warnings:[]};renderPdf()}
-const BUILD='20261110m';
+const BUILD='20261110n';
 async function readPdfPages(data){let pdfjs;try{pdfjs=await import('./vendor/pdfjs/pdf.min.mjs?v='+BUILD)}catch(e){return {ok:false,code:'missing'}}pdfjs.GlobalWorkerOptions.workerSrc=new URL('vendor/pdfjs/pdf.worker.min.mjs?v='+BUILD,document.baseURI).href;const load=async(disableWorker)=>pdfjs.getDocument({data:data.slice(),disableWorker:!!disableWorker}).promise;let doc;try{doc=await load(false)}catch(e){const name=String(e&&e.name||'');if(name==='PasswordException'||/password/i.test(String(e&&e.message||'')))return {ok:false,code:'password'};try{doc=await load(true)}catch(e2){const name2=String(e2&&e2.name||'');if(name2==='PasswordException'||/password/i.test(String(e2&&e2.message||'')))return {ok:false,code:'password'};return {ok:false,code:'broken'}}}try{const pages=[];let chars=0;const limit=Math.min(doc.numPages,SmetaPdf.MAX_PAGES);for(let i=1;i<=limit;i++){const page=await doc.getPage(i);const content=await page.getTextContent();const items=(content.items||[]).filter(it=>it&&it.str).map(it=>({str:it.str,x:it.transform[4],y:it.transform[5]}));const lines=SmetaPdf.linesFromItems(items);chars+=lines.join('').length;pages.push(lines)}if(chars<15)return {ok:false,code:'empty'};return {ok:true,pages}}catch(e){return {ok:false,code:'broken'}}}
 async function importPdfFile(inp){const file=inp.files&&inp.files[0];inp.value='';if(!file)return;const problem=SmetaPdf.fileProblem(file);if(problem){alert(problem);return}let bytes;try{bytes=new Uint8Array(await file.arrayBuffer())}catch(e){alert(SmetaPdf.explainExtract('broken'));return}const read=await readPdfPages(bytes);if(!read.ok){pdfDraft={rows:[],warnings:[SmetaPdf.explainExtract(read.code)]};renderPdf();return}openPdfDraft(SmetaPdf.parsePages(read.pages,pdfCatalog()))}
 function parsePdfPaste(){const text=(document.getElementById('pdfPaste')||{}).value||'';if(!String(text).trim()){alert('Вставьте текст сметы.');return}const parsed=SmetaPdf.parsePages([text],pdfCatalog());if(!parsed.rows.length){alert('В тексте нет строк вида «название, цена, количество, единица». Шапка и итоги пропускаются.');return}openPdfDraft(parsed)}
