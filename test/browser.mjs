@@ -55,7 +55,8 @@ try {
     const r = S.rooms[0];
     r.L = '3.43'; r.W = '5.53'; r.H = '2.64'; r.open = '5.25'; r.slopes = '6.5';
     const g = geo(r);
-    r.works.push({ sec: CAT[4][0], surf: CAT[4][1], name: CAT[4][2], unit: CAT[4][3], price: CAT[4][4], base: 'walls', qty: g.walls, auto: true });
+    const paper = CAT.find(x => x[2] === 'Снятие обоев' && x[1] === 'Стены');
+    r.works.push({ sec: paper[0], surf: paper[1], name: paper[2], unit: paper[3], price: paper[4], base: 'walls', qty: g.walls, auto: true });
     r.works.push({ sec: 'Электромонтажные работы', surf: 'Чистовые электромонтажные', name: 'Установка механизмов розеток, выключателей, диммера', unit: 'шт', price: '451,5', qty: '2,5', auto: false });
     save(); render();
   });
