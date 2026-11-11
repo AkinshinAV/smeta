@@ -33,7 +33,7 @@ try {
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: 'networkidle0' });
   const build = await page.$eval('#buildTag', el => el.textContent);
-  ok('на странице видна сборка', build.includes('20261110j'), build);
+  ok('на странице видна сборка', build.includes('20261110k'), build);
   await setInputFiles(page, '#imp-pdf', pdfPath);
   await page.evaluate(() => importPdfFile(document.getElementById('imp-pdf')));
   await page.waitForFunction(() => pdfDraft && pdfDraft.rows && pdfDraft.rows.length > 20, { timeout: 20000 });
@@ -61,7 +61,7 @@ try {
   ok('помещения 14/20/11/37/7/23', preview.rooms['Комната'] === 14 && preview.rooms['Кухня'] === 20 && preview.rooms['Коридор'] === 11 && preview.rooms['Ванная'] === 37 && preview.rooms['Балкон'] === 7 && preview.rooms['Электрика'] === 23, JSON.stringify(preview.rooms));
   ok('цены выше 994 доходят до поля', preview.max > 994 && preview.over994 >= 30, 'max ' + preview.max + ' above ' + preview.over994);
   ok('совпадение каталога не равно числу строк', preview.strict >= 60 && preview.strict < preview.rows && preview.checked < preview.rows && preview.checked > preview.strict, JSON.stringify({ strict: preview.strict, checked: preview.checked, rows: preview.rows }));
-  ok('диалог показывает сборку', preview.msg.includes('20261110j'), preview.msg);
+  ok('диалог показывает сборку', preview.msg.includes('20261110k'), preview.msg);
   const beforeApply = await page.evaluate(() => ({
     estimates: LIB.objects[0].estimates.length,
     included: pdfDraft.rows.filter(r => r.include).reduce((s, r) => s + Math.round(r.price * r.qty), 0)

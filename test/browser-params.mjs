@@ -53,7 +53,7 @@ try {
   });
   ok('у поиска подпись снаружи поля', searchLabel.text === 'Поиск' && searchLabel.placeholder === '', JSON.stringify(searchLabel));
   const serverClosed = await page.evaluate(() => {
-    const det = [...document.querySelectorAll('#libView details')].find(d => (d.querySelector('summary') || {}).textContent.includes('Подключение сервера'));
+    const det = [...document.querySelectorAll('details')].find(d => (d.querySelector('summary') || {}).textContent.includes('Подключение сервера'));
     const url = document.getElementById('srvUrl');
     const display = url ? getComputedStyle(url).display : '';
     const box = url ? url.getBoundingClientRect() : { height: -1 };

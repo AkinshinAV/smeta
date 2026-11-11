@@ -38,10 +38,10 @@ try {
     save();
     localStorage.setItem('smeta_v1_server_url', base);
   }, 'http://127.0.0.1:8795');
-  await page.evaluate(() => { showLib(); const det = [...document.querySelectorAll('#libView details')].find(d => d.querySelector('#srvUrl')); if (det) det.open = true; });
+  await page.evaluate(() => { const more = document.querySelector('.more'); if (more) more.open = true; const det = document.getElementById('serverDet'); if (det) det.open = true; });
   await page.type('#srvUser', 'admin');
   await page.type('#srvPass', 'long-password-1');
-  await page.click('button[onclick="loginServer()"]');
+  await page.evaluate(() => document.querySelector('button[onclick="loginServer()"]').click());
   await page.waitForFunction(() => document.getElementById('saveState').textContent.includes('Сохранено на сервере'), { timeout: 10000 });
   const snap = await fetch('http://127.0.0.1:8795/api/snapshot', { headers: { Authorization: 'Bearer ' + await page.evaluate(() => localStorage.getItem('smeta_v1_token')) } });
   const body = await snap.json();

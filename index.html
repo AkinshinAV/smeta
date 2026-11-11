@@ -17,10 +17,9 @@
 details:not([open]) > :not(summary){display:none!important}
 html,body{max-width:100%;overflow-x:hidden}
 body{font-family:'IBM Plex Sans',Arial,sans-serif;font-synthesis:none;margin:0;background:#EEF1F6;color:#1E2433;font-size:14px;line-height:1.35;font-variant-numeric:tabular-nums}
-.topbar{position:sticky;top:0;z-index:20;background:#FFFFFF;color:#1E2433;border-bottom:1px solid #d5dbe6;padding:6px 12px;display:flex;gap:8px 10px;align-items:center}
-.tb-brand{display:flex;flex-direction:column;gap:3px;margin-right:auto;min-width:0}
-.tb-title{display:flex;align-items:baseline;gap:8px;min-width:0}
-.topbar h1{font-size:19px;margin:0;font-weight:600;letter-spacing:0;color:#1E2433;white-space:nowrap}
+.topbar{position:sticky;top:0;z-index:20;height:52px;background:#FFFFFF;color:#1E2433;border-bottom:1px solid #d5dbe6;padding:0 20px;display:flex;gap:8px;align-items:center}
+.tb-brand{display:flex;flex-direction:row;align-items:center;gap:10px;margin-right:auto;min-width:0;flex:1}
+.topbar h1{font-size:18px;margin:0;font-weight:600;letter-spacing:0;color:#1E2433;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tb-actions{display:flex;gap:6px;align-items:center;flex:none}
 button{background:#3651D4;color:#fff;border:1px solid #3651D4;border-radius:4px;padding:5px 9px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;line-height:1.2;white-space:nowrap;transition:background .12s ease,border-color .12s ease}
 button:hover{background:#2c44b8}
@@ -32,15 +31,26 @@ button.quiet:hover{background:#e8edf4}
 button.sm{padding:5px 9px;font-size:12px}
 button.del{background:#fff;color:#a3261c;border-color:#f0c7c3}
 .filebtn{display:inline-flex;align-items:center;border-radius:4px;padding:5px 9px;font-size:13px;font-weight:500;cursor:pointer;background:#fff;color:#1E2433;border:1px solid #cfd6e2;line-height:1.2;white-space:nowrap}
-.filebtn.pdf{background:#0e7a62;color:#fff;border-color:#0c6a55}
 .filebtn input{display:none}
 .more{position:relative}
 .more>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;background:#fff;color:#1E2433;border:1px solid #cfd6e2;border-radius:4px;padding:5px 9px;font-size:13px;font-weight:500;white-space:nowrap}
+.more-dots{display:none}
+.phone-only{display:none}
+button.navbtn{background:transparent;color:#3651D4;border-color:transparent;padding:4px 8px}
+button.navbtn:hover{background:#EEF1F8}
+.nav-ico{display:inline-flex}
 .more>summary::-webkit-details-marker{display:none}
-.more-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:40;background:#fff;border:1px solid #d5dbe6;border-radius:4px;box-shadow:0 6px 16px #1E243314;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:188px}
+.more-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:40;background:#fff;border:1px solid #d5dbe6;border-radius:4px;box-shadow:0 6px 16px #1E243314;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:240px;max-width:min(320px,calc(100vw - 16px))}
+.more-menu details{padding:0}
+.more-menu details>summary{padding:6px 8px;cursor:pointer;font-weight:500}
+.more-menu details p,.more-menu details .grid{padding:0 8px 8px;margin:0}
 .more-menu .filebtn,.more-menu button{justify-content:flex-start;width:100%;background:#fff;color:#1E2433;border-color:transparent}
 .more-menu .filebtn:hover,.more-menu button:hover{background:#f3f6fa}
-.tabs{background:#3C3958;display:flex;flex-wrap:nowrap;gap:0;padding:0 4px;align-items:stretch;overflow-x:auto;border-bottom:0}
+.tabbar{position:sticky;top:52px;z-index:18;display:flex;align-items:stretch;background:#3C3958}
+.tabbar::after{content:"";position:absolute;right:44px;top:0;bottom:0;width:28px;background:linear-gradient(90deg,rgba(60,57,88,0),#3C3958);pointer-events:none}
+.tabs{position:relative;flex:1;min-width:0;background:#3C3958;display:flex;flex-wrap:nowrap;gap:0;padding:0 4px;align-items:stretch;overflow-x:auto;border-bottom:0}
+.tabadd{flex:none;width:44px;background:transparent;color:#F3D16A;border:0;border-left:1px solid #ffffff2e;border-radius:0;font-size:22px;font-weight:500;padding:0}
+.tabadd:hover{background:#4a4668;color:#fff}
 .tabs button{background:transparent;color:#d5d3e4;border:0;border-radius:0;padding:7px 11px 6px;font-size:12.5px;font-weight:500;flex:none;min-width:max-content;border-bottom:2px solid transparent;white-space:nowrap;transition:background .15s ease,color .15s ease,border-color .15s ease}
 .tabs button:hover{background:#4a4668;color:#fff}
 .tabs button.on{background:#4e4a6e;color:#fff;border-bottom-color:#F3D16A}
@@ -48,25 +58,27 @@ button.del{background:#fff;color:#a3261c;border-color:#f0c7c3}
 .tabs button.on .sm{color:#F3D16A}
 .tabs .add{color:#d5e2ff;min-width:auto;font-weight:650}
 .tabs .add:hover{color:#fff}
-.dimstrip{background:#fff;padding:6px 12px;font-size:13px;border-bottom:1px solid #e2e7ef;color:#1E2433;min-height:34px}
+.dimstrip{background:#fff;padding:6px 20px;font-size:13px;border-bottom:1px solid #e2e7ef;color:#1E2433}
+.dimstrip:empty{display:none}
 .dimnote{color:#66758a}
 .dimedit{display:flex;gap:8px 10px;align-items:flex-end;flex-wrap:wrap}
-.dimedit label{width:auto;font-size:11px;letter-spacing:0;text-transform:none;color:#5c677a;gap:2px;font-weight:500}
+.dimedit label{width:auto;font-size:12px;letter-spacing:0;text-transform:none;color:#2C3548;gap:2px;font-weight:500}
 .dimedit input{width:74px;padding:4px 6px}
 .dimcalc{display:flex;flex-direction:column;gap:1px;padding:0 8px;border-left:1px solid #e4eaf2;min-width:64px}
-.dimcalc span{font-size:11px;letter-spacing:0;text-transform:none;color:#5c677a;font-weight:500}
+.dimcalc span{font-size:12px;letter-spacing:0;text-transform:none;color:#2C3548;font-weight:500}
 .dimcalc b{font-size:13px;font-weight:600;color:#1E2433;font-variant-numeric:tabular-nums}
-main{max-width:none;margin:0;padding:10px 12px 16px}
+main{width:100%;max-width:1600px;margin:0 auto;padding:16px 20px 24px}
 .card{background:#FFFFFF;border:1px solid #e2e7ef;border-radius:4px;padding:10px 12px;margin-bottom:8px}
 .card h3{margin:0 0 6px;font-size:15px;letter-spacing:0;font-weight:600}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
-label{display:flex;flex-direction:column;font-size:12px;font-weight:500;color:#5c677a;gap:3px}
+label{display:flex;flex-direction:column;font-size:13px;font-weight:500;color:#2C3548;gap:3px}
+.hint{font-size:12px;font-weight:400;color:#5B6475}
 input,select,textarea{padding:5px 7px;border:1px solid #cfd6e2;border-radius:4px;font-size:14px;width:100%;font-family:inherit;background:#fff;color:#1E2433}
 input:focus,select:focus,textarea:focus{outline:2px solid #d5dcf7;border-color:#3651D4}
-table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:4px 6px;border-bottom:1px solid #e6ebf2;text-align:left}th{font-size:12px;color:#5c677a;font-weight:500;background:#f6f8fb}
+table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:4px 6px;border-bottom:1px solid #e6ebf2;text-align:left}th{font-size:12px;color:#5B6475;font-weight:600;background:#f6f8fb}
 td input{padding:4px 6px;width:84px}.num{text-align:right;white-space:nowrap}
 .stats{display:flex;gap:12px;flex-wrap:wrap;background:#f4f7fb;padding:8px 10px;border-radius:6px;margin:8px 0}
-.tot{font-weight:700}.big{font-size:15px}.muted{color:#5c677a;font-size:12px;font-weight:400}
+.tot{font-weight:700}.big{font-size:15px}.muted{color:#5B6475;font-size:12px;font-weight:400}
 .sech{display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;font-weight:600;font-size:13px;background:#2B7F82;color:#fff}
 .sech .sum{margin-left:auto;color:#fff;font-variant-numeric:tabular-nums}
 .sech .muted{color:#d7eef0}
@@ -101,23 +113,29 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 .svod-card .row{display:flex;justify-content:space-between;gap:8px;padding:2px 0}
 .price-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;align-items:center}
 #summary table{background:#fff}
-#summary tr.tot td,#summary .tot{background:#e7f0fa;font-weight:700}
+#summary td,#summary th{padding:3px 8px}
+#summary tr.tot td,#summary .tot{background:#e7f0fa;font-weight:600}
+.grand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:8px 0 0;padding:10px 12px;background:#E7ECF6;font-size:19px;font-weight:600;color:#1E2433}
+.grand b{font-size:20px;font-weight:600}
+.disc-line{display:block;margin-top:6px;color:#5B6475;font-size:13px}
 .roombar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 .roombar input{max-width:280px;font-weight:600;font-size:18px}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
 @media(max-width:700px){
-  main{padding:8px}
+  main,#libView{padding:12px 16px 20px}
   .card{padding:8px}
-  .topbar{flex-wrap:nowrap;align-items:center;gap:6px;padding:6px 8px}
-  .tb-brand{width:auto;flex:1 1 120px;min-width:0;max-width:46%}
-  .tb-title{min-width:0}
-  .topbar h1{font-size:15px;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-  #buildTag{display:none}
-  #saveState{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .tb-actions{width:auto;flex:1 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;gap:4px}
-  .tb-actions>button,.tb-actions>.filebtn,.more>summary{padding:6px 8px;font-size:12px}
+  .topbar{height:52px;padding:0 10px;gap:4px}
+  .topbar h1{font-size:16px;max-width:58vw}
+  .desk-only{display:none!important}
+  .phone-only{display:flex}
+  .more-word{display:none}
+  .more-dots{display:inline;font-size:22px;line-height:1}
+  .nav-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .more>summary{border:0;background:transparent;padding:0 6px}
+  #saveState .save-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .objgrid{grid-template-columns:1fr 1fr}
   .search>.muted{display:none}
   input,select,textarea{font-size:16px}
   .wr{grid-template-columns:28px minmax(0,1fr);align-items:start}
@@ -132,7 +150,7 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 
 /* ===== print ===== */
 #print{display:none}
-@media print{header,.topbar,.tabs,.dimstrip,main{display:none!important}#print{display:block!important}body{background:#fff;margin:0}}
+@media print{header,.topbar,.tabbar,.tabs,.dimstrip,main{display:none!important}#print{display:block!important}body{background:#fff;margin:0}}
 #print{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact;font-family:Jost,"Futura PT",Futura,"Century Gothic",Arial,sans-serif;color:#000;font-size:6.7pt}
 .pp{break-after:page;page-break-after:always}.pp:last-child{break-after:auto;page-break-after:auto}
 .sh{display:flex;justify-content:space-between;align-items:flex-start;margin:0 0 4px;gap:10pt}
@@ -214,18 +232,23 @@ input.bad{border-color:#d9534f;background:#ffe8e6}
 .anote{background:#fff8e6;border:1px solid #f0e0b0;padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px}
 .aerr{background:#fdecea;border:1px solid #f5c2c0;padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px}
 .aok{background:#e8f6ee;border:1px solid #b7e0c2;padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px}
-#saveState{display:inline-flex;align-items:center;max-width:100%;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:680;line-height:1.35}
-.saveok{background:#e5f6ec;color:#0d6b3a}.savewait{background:#fff4d6;color:#8a5a00}.savebad{background:#fde8e6;color:#9b1c1c}
+#saveState{display:inline-flex;align-items:center;gap:6px;max-width:220px;border:0;background:transparent;border-radius:0;padding:0 2px;font-size:12px;font-weight:500;line-height:1.2;cursor:pointer;position:relative}
+#saveState .save-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+#saveState .save-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#saveState.saveok{color:#0d6b3a;background:transparent;border-color:transparent}
+#saveState.savewait{color:#8a5a00;background:transparent;border-color:transparent}
+#saveState.savebad{color:#9b1c1c;background:transparent;border-color:transparent}
+#saveState:hover{background:transparent}
 #buildTag{color:#7b8ba0;font-size:11px;font-weight:600}
 .printbar{position:sticky;top:0;z-index:30;background:#14301f;color:#fff;padding:8px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .printbar[hidden]{display:none!important}
-body.print-preview .topbar,body.print-preview .tabs,body.print-preview .dimstrip,body.print-preview main,body.print-preview .preview-banner{display:none!important}
+body.print-preview .topbar,body.print-preview .tabbar,body.print-preview .tabs,body.print-preview .dimstrip,body.print-preview main,body.print-preview .preview-banner{display:none!important}
 body.print-preview #print{display:block;min-width:720px}
 html:has(body.print-preview),body.print-preview{overflow-x:auto!important;max-width:none!important}
-body.lib-open .tabs,body.lib-open .dimstrip,body.lib-open main{display:none!important}
-#libView{display:none;max-width:none;margin:0;padding:10px 12px 16px}
+body.lib-open .tabbar,body.lib-open .tabs,body.lib-open .dimstrip,body.lib-open main{display:none!important}
+#libView{display:none;width:100%;max-width:1600px;margin:0 auto;padding:16px 20px 24px}
 body.lib-open #libView{display:block}
-.libcard{background:#fff;border:1px solid #e2e7ef;border-radius:4px;padding:0;margin:0 0 6px;overflow:hidden}
+.libcard{background:#fff;border:1px solid #e2e7ef;border-radius:4px;padding:0;margin:0 0 6px;overflow:visible}
 .libhead{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:8px 10px 2px}
 .libhead h3{margin:0;font-size:15px;font-weight:600}
 .libsum{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -236,7 +259,18 @@ body.lib-open #libView{display:block}
 .libest{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:5px 10px;border-top:1px solid #e8edf3}
 .libest b{white-space:nowrap}
 .estsacts{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end}
-.libmode{display:flex;gap:6px;margin:8px 0}
+.libmode{display:inline-flex;gap:0;margin:8px 0;background:#E4E8F0;border-radius:6px;padding:2px}
+.libmode button{background:transparent;color:#1E2433;border:0;border-radius:4px;padding:4px 12px}
+.libmode button:hover{background:transparent}
+.libmode button.on{background:#fff;color:#1E2433;box-shadow:0 1px 2px #1E243322}
+.libmode button.on:hover{background:#fff}
+.badge{display:inline-block;margin-left:6px;padding:0 6px;border-radius:4px;background:#E8ECFB;color:#3651D4;font-size:11px;font-weight:500;vertical-align:1px}
+.rowmenu{position:relative}
+.rowmenu>summary{list-style:none;cursor:pointer;border:0;background:transparent;color:#1E2433;font-size:18px;line-height:1;padding:2px 8px}
+.rowmenu>summary::-webkit-details-marker{display:none}
+.libest{cursor:pointer}
+.objgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px}
+.assist summary .sumsub{display:block;font-weight:400;font-size:12px;color:#5B6475;margin-top:2px}
 .libcard details{padding:0 12px 8px}
 .archrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 12px;align-items:center;padding:8px 2px;border-bottom:1px solid #eef2f6}
 #measure{overflow-x:auto}
@@ -245,7 +279,7 @@ body.lib-open #libView{display:block}
 .measure select{width:auto;margin-top:4px}
 .measure td.num{font-weight:600;color:#1E2433;font-variant-numeric:tabular-nums}
 #emptyWork[hidden]{display:none!important}
-body.no-work .tabs,body.no-work .dimstrip{display:none}
+body.no-work .tabbar,body.no-work .tabs,body.no-work .dimstrip{display:none}
 .impbox{position:fixed;inset:0;background:#0006;z-index:40;display:flex;align-items:center;justify-content:center;padding:16px}
 .impbox[hidden]{display:none!important}
 .impbox .card{max-width:460px}
@@ -263,22 +297,28 @@ body.no-work .tabs,body.no-work .dimstrip{display:none}
 <button type="button" class="sec" onclick="closePrintPreview()">Закрыть просмотр</button>
 </div>
 <div class="topbar">
-<div class="tb-brand"><div class="tb-title"><h1 id="docTitle">Смета ремонта</h1><span id="buildTag">сборка 20261110j</span></div>
-<span id="saveState" class="saveok">Сохранено в этом браузере</span></div>
+<div class="tb-brand"><h1 id="docTitle">Смета ремонта</h1>
+<button type="button" id="saveState" class="saveok" onclick="showAbout()" title="Сохранено на этом устройстве"><span class="save-dot" aria-hidden="true"></span><span class="save-label">Сохранено локально</span></button></div>
 <div class="tb-actions">
-<button type="button" onclick="showLib()">Объекты</button>
-<button type="button" class="sec" onclick="newObj()">Новая смета</button>
-<label class="filebtn pdf">Импорт PDF<input id="imp-pdf" type="file" accept="application/pdf,.pdf" onchange="importPdfFile(this)"></label>
-<details class="more"><summary>Ещё</summary><div class="more-menu">
+<button type="button" class="navbtn" onclick="showLib()" title="Объекты"><svg class="nav-ico" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="1" y="1" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="10" y="1" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="1" y="10" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="10" y="10" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="nav-label">Объекты</span></button>
+<button type="button" class="desk-only" onclick="newObj()">Новая смета</button>
+<button type="button" class="sec desk-only" onclick="document.getElementById('imp-pdf').click()">Импорт PDF</button>
+<details class="more"><summary><span class="more-word">Ещё</span><span class="more-dots" aria-hidden="true">⋯</span></summary><div class="more-menu">
+<button type="button" class="phone-only" onclick="newObj()">Новая смета</button>
+<label class="filebtn phone-only">Импорт PDF<input id="imp-pdf" type="file" accept="application/pdf,.pdf" onchange="importPdfFile(this)"></label>
 <button type="button" onclick="newObject()">Новый объект</button>
+<button type="button" onclick="exportAll()">Скачать все объекты</button>
+<button type="button" onclick="hideLib()">К открытой смете</button>
 <button type="button" onclick="exportJSON()">Экспорт JSON</button>
 <label class="filebtn">Импорт JSON<input id="imp-smeta" type="file" accept=".json" onchange="importJSON(this)"></label>
 <button type="button" onclick="doPrint('sm')">Смета / PDF</button>
 <button type="button" onclick="doPrint('dog')">Договор</button>
+<details id="aboutDet"><summary>О приложении</summary><p>Сборка <span id="buildTag">20261110k</span>. Список хранится на этом устройстве, пока сервер не подключён. Это не облако.</p></details>
+<details id="serverDet"><summary>Подключение сервера</summary><div id="serverBox"></div></details>
 </div></details>
 </div>
 </div>
-<div class="tabs" id="tabs"></div><div class="dimstrip" id="dims"></div>
+<div class="tabbar"><div class="tabs" id="tabs"></div><button type="button" class="tabadd" onclick="addRoom()" title="Добавить комнату">+</button></div><div class="dimstrip" id="dims"></div>
 <div id="libView"></div>
 <div id="pdfBox" class="impbox" hidden><div class="card" style="max-width:920px;width:100%;max-height:90vh;overflow:auto"><h3 style="margin-top:0">Черновик из PDF</h3><p id="pdfMsg" class="muted"></p><div id="pdfRows"></div><label>Текст, если в PDF нет текстового слоя<textarea id="pdfPaste" rows="4" placeholder="Название, цена, количество и единица в одной строке. Например: Снятие обоев 99 р. 12 м2 1188 р."></textarea></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" onclick="parsePdfPaste()">Разобрать вставленный текст</button><button type="button" onclick="applyPdf('new')">Новой сметой</button><button type="button" class="sec" onclick="applyPdf('replace')">Заменить открытую смету</button><button type="button" class="sec" onclick="closePdf()">Отмена</button></div></div></div>
 <div id="impBox" class="impbox" hidden><div class="card"><h3 style="margin-top:0">Импорт</h3><p id="impDesc"></p>
@@ -286,7 +326,7 @@ body.no-work .tabs,body.no-work .dimstrip{display:none}
 <button type="button" class="sec" onclick="applyImport('replace')">Заменить весь список</button>
 <button type="button" class="sec" onclick="applyImport('cancel')">Отмена</button></div></div>
 <main>
-<div class="card assist" id="assist"><details id="assistDet"><summary>Разбор описания и дизайна</summary><div class="assist-body">
+<div class="card assist" id="assist"><details id="assistDet"><summary>Разбор описания и дизайна<span class="sumsub">Текст и файлы остаются здесь. В смету попадают только после вашей кнопки.</span></summary><div class="assist-body">
 <p class="muted">Текст и файлы уходят на домашний сервер и оттуда в Yandex Cloud. Из браузера Яндекс напрямую не открывается, VPN не нужен. Ключ и ID каталога остаются только в этом браузере: в смету и в базу сервера они не записываются. Отмеченные позиции добавляются только после вашей кнопки.</p>
 <div class="ai-key"><label>Ключ Yandex<input id="assist-key" type="password" autocomplete="off" spellcheck="false" placeholder="API-ключ каталога"></label><label>ID каталога<input id="assist-folder" autocomplete="off" spellcheck="false" placeholder="из кабинета, вида b1g…"></label><a href="https://aistudio.yandex.ru/" target="_blank" rel="noopener">Yandex AI Studio</a></div>
 <p class="muted">Ключ создаётся в Yandex AI Studio у сервисного аккаунта каталога, роль ai.languageModels.user. ID каталога показан там же. Текст без картинок разбирает YandexGPT. Чертёж читает мультимодальная модель Qwen в том же кабинете: сам YandexGPT рисунки не видит.</p>
@@ -302,9 +342,9 @@ body.no-work .tabs,body.no-work .dimstrip{display:none}
 <div id="assist-out"></div>
 </div></details></div>
 <div id="emptyWork" class="card" hidden></div>
-<div id="panel-obj"><div id="measure"></div><div class="card objcard"><h3 style="margin-top:0">Карточка объекта</h3><div class="grid">
-<label>Название объекта<input id="o_objectName" placeholder="как найти через неделю"></label><label>Адрес<input id="o_addr"></label><label>Заказчик<input id="o_client"></label><label>Площадь объекта, м² (если пусто — сумма полов)<input id="o_area" type="text" inputmode="decimal"></label>
-<label>№ сметы<input id="o_num"></label><label>Дата<input id="o_date" type="date"></label><label>Скидка, %<input id="o_disc" type="text" inputmode="decimal"></label><label>Коэф. цен<input id="o_coef" type="text" inputmode="decimal" placeholder="1"></label></div></div>
+<div id="panel-obj"><div id="measure"></div><div class="card objcard"><details open><summary>Карточка объекта</summary><div class="objgrid">
+<label>Название<input id="o_objectName"><span class="hint">как найти через неделю</span></label><label>Адрес<input id="o_addr"></label><label>Заказчик<input id="o_client"></label><label>Площадь, м²<input id="o_area" type="text" inputmode="decimal"><span class="hint">если пусто — сумма полов</span></label>
+<label>№ сметы<input id="o_num"></label><label>Дата<input id="o_date" type="date"></label><label>Скидка, %<input id="o_disc" type="text" inputmode="decimal"></label><label>Коэф.<input id="o_coef" type="text" inputmode="decimal" placeholder="1"><span class="hint">множитель цен, пусто = 1</span></label></div></details></div>
 <div class="card kd"><details id="kdDet"><summary style="font-weight:600;font-size:16px;cursor:pointer">Данные для договора</summary><div class="grid">
 <label>ФИО заказчика полностью<input data-k="fio"></label><label>Паспорт: серия и номер<input data-k="pser"></label><label>Кем выдан<input data-k="pby"></label>
 <label>Дата выдачи<input type="date" data-k="pdate"></label><label>Код подразделения<input data-k="pcode"></label><label>Адрес регистрации<input data-k="reg"></label>
@@ -324,14 +364,14 @@ body.no-work .tabs,body.no-work .dimstrip{display:none}
 <div class="card" id="addrow"><button onclick="addRoom()">+ Помещение</button></div>
 <div class="card" id="summary"></div>
 <div id="panel-price" style="display:none"></div>
-<p class="muted">Цены в каталоге взяты из образцов смет Remfy (14.10.2026 и 17.10.2026). Позиции без цены нужно заполнить вручную. Данные сохраняются в этом браузере автоматически. Подбор по описанию сравнивает фразу только с этим каталогом.</p>
+
 </main><div id="print"></div>
-<script src="library.js?v=20261110j"></script>
-<script src="sync.js?v=20261110j"></script>
-<script src="pdf-import.js?v=20261110j"></script>
-<script src="smeta-calc.js?v=20261110j"></script>
-<script src="assist.js?v=20261110j"></script>
-<script src="assist-ai.js?v=20261110j"></script>
+<script src="library.js?v=20261110k"></script>
+<script src="sync.js?v=20261110k"></script>
+<script src="pdf-import.js?v=20261110k"></script>
+<script src="smeta-calc.js?v=20261110k"></script>
+<script src="assist.js?v=20261110k"></script>
+<script src="assist-ai.js?v=20261110k"></script>
 <script>
 // [раздел, поверхность, название, ед., цена, база количества]  база: floor|walls|perim|slopes|ceil|manual ; null цена = ввести вручную
 const SP=['Электромонтажные работы','Сантехнические работы'];
@@ -446,7 +486,10 @@ const PRICE_DEF=[{"sn":"1","s":"Демонтажные работы","u":"Сте
 const PRICE_NOTES="<p>Примечание:</p><p>1) минимальная стоимость сметы МКАД 200 000 рублей, за МКАД 200 000 рублей</p><p>2) минимальная стоимость работы по выносу строительного мусора - 2000 рублей</p><p>3) минимальная стоимость работы по подъему материала - 1500 рублей</p><p>4) при установке двери в количестве 1 шт, к цене прибавляется стоимость выезда - 1500 рублей</p><p>5) минимальная стоимость натяжного потолка ПВХ - 10000 рублей, тканевого натяжного потолка - 12000 рублей</p><p>6) минимальная стоимость заказа еврошлифовки - 15000 рублей, включая материал</p><p>7) в работу по демонтажу входит вынос мусора до лестничной площадки клиента</p><p>8) для работ со следующими материалами: обои, ламинат, паркетная доска, плитка, панели (всех видов), ГКЛ, при объеме меньше и включительно 6м2 и 1м2 применяются коэффициенты 1,25 и 1,75 соответственно, при укладке по диагонали применяется коэффициент 1,3</p><p>9) при объеме работ меньше 1м2, либо 1 м/п, объем округляется до единицы</p><p>10) *для данных видов работ, в зависимости от сложности (количества слоев краски, полная очистка поверхности от краски), возможно применение повышающего коэффициента от 1,25 до 2,0</p><p>11) для работ по ремонту балконов и лоджий возможно применение коэффициентов 1,25-2,0</p><p>12) **для данных видов работ, в зависимости от сложности (шкафы-купе, габаритная мебель, люстры, большое количество деталей) возможно применение повышающего коэффициента от 1,25 до 2,5</p><p>13) ***рассчитывается индивидуально, цена указана справочно</p><p>14)****стоимость работы, без учета материала составляет: 600р/м2</p><p>15) для видов работ, связанных с нахождением на высоте свыше 2 метров, возможно применение повышающих коэффициентов от 1,3, до 2,0</p><p>16) цены для некоторых видов работ, при ремонте санузлов, лоджий, балконов, кладовых, могут быть увеличены на коэффициент 1,25</p><p>17) виды работ, не указанные в прейскуранте, расцениваются из расчета 750 руб/час</p><p>18) при работе с дорогостоящими материалами, а именно: Обои свыше 4000 за рулон, ламинат и паркет свыше 2500 за квадратный метр, керамическая плитка, керамогранит свыше 2000 за квадратный метр, возможно применение коэффициентов 1,5-2,0</p><p>19) данная стоимость по выносу мусора рассчитывается при условии наличия контейнера для сбора строительного мусора не далее 30 метров от подъезда или места проведения работ</p><p>20) стоимость установки дверей указана из расчета стоимости комплекта двери до 15тыс.р. При стоимости комплекта двери от 15 до 70тыс.р к сттоимости устаноки применяется коэф. 1,25. При стоимости комплекта двери от 71тыс.р и более к стоимости устаноки применяется коэф. 1,5</p><p>21) Минимальная стоимость специализированных работ (выезд) - 8000р</p><p>22) стандартный монтаж кондиционера включает - установку наружного блока под окно шт - пробивка отвестия ф40 шт - прокладка фреоновой трассы м - прокладка кабель-канала сечением 60х60 м - прокладка кабель-канала сечением 16х16 м - комплектующие и расходный материал ком 5 прокладка кабель-канала сечением 16х16 м 6 комплектующие и расходный материал ком</p><p>**материал включен</p><p>ЦЕНЫ ДЕЙСТВИТЕЛЬНЫ 120 ДНЕЙ С МОМЕНТА ЗАКЛЮЧЕНИЯ ДОГОВОРА</p>";
 const SECTIONS=[...new Set(CAT.map(c=>c[0]))];
 const KEY='smeta_v1';let S;
-const r2=SmetaCalc.r2,fl=SmetaCalc.fl,money=SmetaCalc.money,num=SmetaCalc.num,parseUserNum=SmetaCalc.parseUserNum;
+const r2=SmetaCalc.r2,fl=SmetaCalc.fl,num=SmetaCalc.num,parseUserNum=SmetaCalc.parseUserNum;
+function screenMoney(x){const n=fl(num(x));const sign=n<0?'−':'';const body=String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00a0');return sign+body+'\u00a0₽'}
+const money=screenMoney;
+function screenDate(s){const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+'.'+m[2]+'.'+m[1]:(s?'без даты':'без даты')}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PRICE_KEY='smeta_price';
 function stemRu(w){w=String(w||'').toLowerCase().replace(/ё/g,'е');const suf=['циями','ями','ами','иями','ов','ев','ёв','ей','ой','ий','ый','ая','ое','ые','ие','ью','ем','ом','ам','ям','ах','ях','ую','юю','ы','и','а','я','у','ю','о','е','ь'];for(const s of suf){if(w.length>s.length+2&&w.endsWith(s))return w.slice(0,-s.length)}return w}
@@ -469,7 +512,8 @@ function refreshStatus(){if(!LIB){syncState={level:'device',detail:''};return}sy
 function load(){const planned=SmetaLib.planLoad({libRaw:storageGet(LIB_KEY),legacyRaw:storageGet(KEY),backupRaw:storageGet(BACKUP_KEY),priceRaw:storageGet(PRICE_KEY),priceBackupRaw:storageGet(PRICE_BACKUP),coRaw:storageGet(CO_KEY),coBackupRaw:storageGet(CO_BACKUP),blank:blank(),validEstimate,damagedSlots:damagedSlots()});LIB=planned.lib;const applied=SmetaLib.applyWrites(localStorage,libSlots(),planned.writes);const needLibrary=planned.writes.some(w=>w.slot==='library');const wroteLibrary=!!(applied.done&&applied.done.indexOf(LIB_KEY)>=0);if(planned.blocked||(needLibrary&&!wroteLibrary)){saveState={ok:false,readOnly:true,heldRaw:planned.heldRaw||storageGet(LIB_KEY),msg:planned.blocked?(planned.warnings[0]||'Исходный список не перезаписан.'):(applied.message||'Копия повреждённого списка не записана. Исходная запись не заменена.'),warnings:planned.warnings}}else if(!applied.ok){saveState={ok:false,readOnly:false,heldRaw:planned.heldRaw||null,msg:applied.message,warnings:planned.warnings}}else{saveState={ok:true,readOnly:false,heldRaw:null,warnings:planned.warnings}}const pair=SmetaLib.activePair(LIB);S=pair&&pair.est&&pair.est.estimate?pair.est.estimate:blank();if(pair)SmetaLib.pullCard(pair.obj,S);if(!Array.isArray(S.rooms))S.rooms=[];S.rooms.forEach(r=>{if(!Array.isArray(r.works))r.works=[]});refreshStatus()}
 function save(){if(saveState.readOnly){paintSave();return}if(!LIB)return;SmetaLib.capture(LIB,S);const applied=persistLib();if(!applied.ok){saveState={ok:false,readOnly:false,heldRaw:saveState.heldRaw||null,msg:applied.message,warnings:saveState.warnings||[]};paintSave();return}saveState={ok:true,readOnly:false,heldRaw:saveState.heldRaw||null,warnings:saveState.warnings||[]};syncTransportError='';refreshStatus();paintSave();scheduleSync()}
 function downloadHeld(){if(!saveState.heldRaw)return;const blob=new Blob([saveState.heldRaw],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='smeta_library_damaged.json';a.click()}
-function paintSave(){const el=document.getElementById('saveState');if(!el)return;if(saveState.readOnly||saveState.ok===false){el.className='savebad';el.textContent=saveState.msg||'Не сохранилось';return}const text={device:'Сохранено на этом устройстве'+(syncState.detail?'. '+syncState.detail:'. Сервер не подключён, это не облако.'),pending:'Сохранено на этом устройстве, ожидает отправки'+(syncState.detail?'. '+syncState.detail:'.'),server:'Сохранено на сервере.',conflict:syncState.detail||'Конфликт с сервером. Местная копия не затёрта.',error:'Сохранено на этом устройстве. '+(syncState.detail||'Ошибка сервера')};el.className=syncState.level==='conflict'||syncState.level==='error'?'savebad':(syncState.level==='pending'?'savewait':'saveok');el.textContent=text[syncState.level]||text.device}
+function paintSave(){const el=document.getElementById('saveState');if(!el)return;const label=el.querySelector('.save-label');let text,cls,title;if(saveState.readOnly||saveState.ok===false){text=saveState.msg||'Не сохранилось';cls='savebad';title=text}else{const pack={device:['Сохранено локально','saveok','Сохранено на этом устройстве. Сервер не подключён, это не облако.'],pending:['Сохранено локально, ожидает отправки','savewait','Правка сохранена на этом устройстве и ещё не дошла до сервера.'],server:['Сохранено на сервере','saveok','Сервер подтвердил эту версию.'],conflict:[syncState.detail||'Конфликт с сервером. Местная копия не затёрта.','savebad',syncState.detail||'Конфликт с сервером. Местная копия не затёрта.'],error:['Сохранено локально. '+(syncState.detail||'Ошибка сервера'),'savebad','Сохранено на этом устройстве. '+(syncState.detail||'Ошибка сервера')]};const row=pack[syncState.level]||pack.device;text=row[0];cls=row[1];title=row[2]}el.className=cls;el.title=title;if(label)label.textContent=text;else el.textContent=text}
+function showAbout(){const more=document.querySelector('.more');if(more)more.open=true;const about=document.getElementById('aboutDet');if(about)about.open=true}
 function adopt(est){smKeys=null;S=est;if(!Array.isArray(S.rooms))S.rooms=[];S.rooms.forEach(r=>{if(!Array.isArray(r.works))r.works=[]});assistUndo=null;const u=document.getElementById('assist-undo');if(u)u.hidden=true;save();bindK();render()}
 function showLib(){document.body.classList.add('lib-open');renderLib()}
 function hideLib(){document.body.classList.remove('lib-open')}
@@ -479,13 +523,16 @@ function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>flushSy
 async function api(method,path,body){const headers={};if(token())headers.Authorization='Bearer '+token();if(body!=null)headers['Content-Type']='application/json';const res=await fetch(serverUrl()+path,{method,headers,body:body!=null?JSON.stringify(body):undefined});const text=await res.text();let data=null;try{data=text?JSON.parse(text):null}catch(e){data={error:'непонятный ответ сервера'}}if(res.status===401)localStorage.removeItem('smeta_v1_token');return {ok:res.ok,status:res.status,data}}
 function rebindActive(){const pair=SmetaLib.activePair(LIB);if(!pair)return;if(pair.est.estimate!==S){S=pair.est.estimate;if(!Array.isArray(S.rooms))S.rooms=[];bindK();render()}else{['addr','client','objectName'].forEach(k=>{const e=document.getElementById('o_'+k);if(e&&document.activeElement!==e)e.value=S[k]??''})}}
 async function flushSync(){if(syncing||saveState.readOnly||!serverUrl()||!token()){refreshStatus();paintSave();return}syncing=true;try{SmetaLib.capture(LIB,S);const snap=await api('GET','/api/snapshot');if(!snap.ok)throw new Error((snap.data&&snap.data.error)||'сервер не принял запрос');SmetaSync.applyActions(LIB,SmetaSync.plan(LIB,snap.data).filter(a=>!String(a.op).startsWith('put')));const pushes=SmetaSync.plan(LIB,snap.data).filter(a=>String(a.op).startsWith('put'));for(const action of pushes){if(action.op==='put-object'){const obj=SmetaLib.findObject(LIB,action.id);if(!obj||obj.syncConflict||!obj.dirty)continue;const res=await api('PUT','/api/objects/'+encodeURIComponent(obj.id),SmetaSync.pushBodyObject(obj));if(res.status===409)SmetaSync.markConflict(LIB,'object',obj.id,res.data&&res.data.server);else if(!res.ok)throw new Error((res.data&&res.data.error)||'объект не записан');else SmetaSync.ackObject(LIB,res.data.object)}else if(action.op==='put-estimate'){const obj=SmetaLib.findObject(LIB,action.objectId);const est=obj&&(obj.estimates||[]).find(e=>e.id===action.id);if(!est||est.syncConflict||!est.dirty)continue;const res=await api('PUT','/api/estimates/'+encodeURIComponent(est.id),SmetaSync.pushBodyEstimate(est,obj.id));if(res.status===409)SmetaSync.markConflict(LIB,'estimate',est.id,res.data&&res.data.server);else if(!res.ok)throw new Error((res.data&&res.data.error)||'смета не записана');else SmetaSync.ackEstimate(LIB,res.data.estimate)}}const applied=persistLib();if(!applied.ok)throw new Error(applied.message||'не записалось локально');syncTransportError='';rebindActive();refreshStatus();if(document.body.classList.contains('lib-open'))renderLib()}catch(e){try{persistLib()}catch(err){}syncTransportError=String((e&&e.message)||'сервер не отвечает');refreshStatus()}finally{syncing=false;paintSave()}}
-function saveServerUrl(value){const raw=String(value||'').trim();if(!raw){localStorage.removeItem('smeta_v1_server_url');refreshStatus();paintSave();renderLib(1);return}try{const u=new URL(raw);if((u.protocol!=='https:'&&u.protocol!=='http:')||u.username||u.password)throw 0;localStorage.setItem('smeta_v1_server_url',u.origin)}catch(e){alert('Адрес сервера должен быть вида https://имя:порт без логина в ссылке');return}refreshStatus();paintSave();renderLib(1)}
-async function loginServer(){const username=(document.getElementById('srvUser')||{}).value||'';const password=(document.getElementById('srvPass')||{}).value||'';if(!serverUrl()){alert('Сначала укажите адрес сервера');return}try{const res=await api('POST','/api/login',{username,password});if(!res.ok||!res.data||!res.data.token){alert((res.data&&res.data.error)||'Вход не выполнен');return}localStorage.setItem('smeta_v1_token',res.data.token);const pass=document.getElementById('srvPass');if(pass)pass.value='';syncTransportError='';refreshStatus();await flushSync();renderLib()}catch(e){syncTransportError='сервер не отвечает';refreshStatus();paintSave();alert('Сервер не отвечает. Смета остаётся на этом устройстве.')}}
-async function logoutServer(){try{await api('POST','/api/logout')}catch(e){}localStorage.removeItem('smeta_v1_token');refreshStatus();paintSave();renderLib()}
+function saveServerUrl(value){const raw=String(value||'').trim();if(!raw){localStorage.removeItem('smeta_v1_server_url');refreshStatus();paintSave();renderServer();return}try{const u=new URL(raw);if((u.protocol!=='https:'&&u.protocol!=='http:')||u.username||u.password)throw 0;localStorage.setItem('smeta_v1_server_url',u.origin)}catch(e){alert('Адрес сервера должен быть вида https://имя:порт без логина в ссылке');return}refreshStatus();paintSave();renderServer()}
+async function loginServer(){const username=(document.getElementById('srvUser')||{}).value||'';const password=(document.getElementById('srvPass')||{}).value||'';if(!serverUrl()){alert('Сначала укажите адрес сервера');return}try{const res=await api('POST','/api/login',{username,password});if(!res.ok||!res.data||!res.data.token){alert((res.data&&res.data.error)||'Вход не выполнен');return}localStorage.setItem('smeta_v1_token',res.data.token);const pass=document.getElementById('srvPass');if(pass)pass.value='';syncTransportError='';refreshStatus();renderServer();await flushSync();renderLib()}catch(e){syncTransportError='сервер не отвечает';refreshStatus();paintSave();alert('Сервер не отвечает. Смета остаётся на этом устройстве.')}}
+async function logoutServer(){try{await api('POST','/api/logout')}catch(e){}localStorage.removeItem('smeta_v1_token');refreshStatus();paintSave();renderServer();renderLib()}
 let libMode='work';
 function setLibMode(mode){libMode=mode;renderLib(1)}
-function renderMeasure(){const host=document.getElementById('measure');if(!host)return;if(S.tab!=='p'){host.innerHTML='';return}const row=(r,i)=>{const g=r.noDims?null:geo(r);const inp=(k,ph)=>`<input class="rin" data-r="${i}" data-k="${k}" value="${esc(r[k]??'')}" placeholder="${ph||''}">`;return `<tr><td><input class="rin" data-r="${i}" data-k="name" value="${esc(r.name)}" style="width:180px"></td>${r.noDims?'<td colspan="5" class="muted">без размеров</td>':`<td>${inp('L')}</td><td>${inp('W')}</td><td>${inp('H')}</td><td>${inp('open')}</td><td>${inp('slopes')}</td>`}<td class="num">${g?g.perim:'—'}</td><td class="num">${g?g.walls:'—'}</td><td class="num">${g?g.floor:'—'}</td><td><button type="button" class="sec" onclick="copyRoom(${i})">Копия</button> <button type="button" class="del" onclick="if(confirm('Удалить помещение?')){S.rooms.splice(${i},1);S.tab='p';save();render()}">Удалить</button></td></tr>`};host.innerHTML=`<div class="card"><h3 style="margin-top:0">Помещения и размеры</h3><p class="muted">Здесь можно сразу завести все помещения. Периметр, стены и пол считаются: S = L×B, если площадь не введена вручную; P = 2×(L+B); W = P×H − проёмы.</p><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><button type="button" onclick="addRoom()">+ Комната</button></div><div style="overflow-x:auto"><table class="measure"><tr><th>Помещение</th><th>Длина L</th><th>Ширина B</th><th>Высота H</th><th>Проёмы X, м²</th><th>Откосы, м/п</th><th>Периметр P</th><th>Стены W</th><th>Полы S</th><th></th></tr>${(S.rooms||[]).map(row).join('')||'<tr><td colspan="10" class="muted">Помещений пока нет.</td></tr>'}</table></div></div>`;host.querySelectorAll('.rin').forEach(e=>{e.onchange=()=>setR(+e.dataset.r,e.dataset.k,e.value)})}
-function renderLib(refocus){const box=document.getElementById('libView');if(!box)return;const q=(document.getElementById('libQ')||{}).value||'';const items=SmetaLib.queryObjects(LIB.objects||[],q);const work=SmetaLib.workList(items);const archived=SmetaLib.archiveList(items);const estRow=(obj,e)=>{const title='Смета № '+((e.estimate&&e.estimate.num)||'');const on=obj.id===LIB.activeObjectId&&e.id===LIB.activeEstimateId;const conflict=e.syncConflict?' <span class="muted">конфликт</span>':'';return `<div class="libest"><div><b>${esc(title)}</b>${on?' <span class="muted">открыта</span>':''}${conflict}<div class="muted">${esc((e.estimate&&e.estimate.date)||'без даты')} · ${money(estSum(e.estimate))}${e.dirty&&!e.syncConflict&&serverUrl()?' · ждёт отправки':''}</div></div><div class="estsacts"><button type="button" class="sm" onclick="openEst('${obj.id}','${e.id}')">Открыть</button><button type="button" class="quiet" onclick="duplicateEst('${obj.id}','${e.id}')">Дублировать</button><button type="button" class="quiet" onclick="archiveEst('${obj.id}','${e.id}')">В архив</button>${e.syncConflict?`<button type="button" onclick="keepEst('${obj.id}','${e.id}')">Оставить мою копией</button>${e.conflictServer&&!e.conflictServer.missing?`<button type="button" class="sec" onclick="takeEst('${obj.id}','${e.id}')">Принять серверную</button>`:''}`:''}</div></div>`};const card=id=>{const obj=(LIB.objects||[]).find(o=>o.id===id);if(!obj)return '';const live=(obj.estimates||[]).filter(e=>!e.archived);const on=obj.id===LIB.activeObjectId;const conflict=obj.syncConflict?`<div class="aerr">Конфликт карточки. Ваши поля не затёрты.${obj.conflictServer&&!obj.conflictServer.missing?' На сервере: '+esc(obj.conflictServer.name||'')+' / '+esc(obj.conflictServer.client||'')+'.':''} <button type="button" onclick="keepObj('${obj.id}')">Оставить мою копией</button> ${obj.conflictServer&&!obj.conflictServer.missing?`<button type="button" class="sec" onclick="takeObj('${obj.id}')">Принять серверную</button>`:''}</div>`:'';return `<article class="libcard"><div class="libhead"><div><h3>${esc(obj.name||obj.addr||'Без названия')}${on?' <span class="muted">открыт</span>':''}</h3><div class="muted">${esc(obj.addr||'адрес не указан')} · ${esc(obj.client||'заказчик не указан')}</div></div><b class="libsum">${money(objectSum(obj))}</b></div>${conflict}<div class="libacts"><button type="button" class="sm" onclick="addEst('${obj.id}')">Новая смета</button><button type="button" class="quiet" onclick="duplicateObj('${obj.id}')">Дублировать</button><button type="button" class="quiet" onclick="archiveObj('${obj.id}')">В архив</button></div><details><summary>Править карточку</summary><div class="grid" style="margin-top:8px"><label>Название<input value="${esc(obj.name)}" oninput="patchObj('${obj.id}','name',this.value)"></label><label>Адрес<input value="${esc(obj.addr)}" oninput="patchObj('${obj.id}','addr',this.value)"></label><label>Заказчик<input value="${esc(obj.client)}" oninput="patchObj('${obj.id}','client',this.value)"></label><label>Телефон<input value="${esc(obj.phone)}" oninput="patchObj('${obj.id}','phone',this.value)"></label><label>Почта<input value="${esc(obj.email)}" oninput="patchObj('${obj.id}','email',this.value)"></label><label>Заметка<input value="${esc(obj.note)}" oninput="patchObj('${obj.id}','note',this.value)"></label></div></details>${live.map(e=>estRow(obj,e)).join('')||'<p class="muted" style="padding:0 12px 10px">Нет рабочих смет.</p>'}</article>`};const archRow=row=>{if(row.type==='object'){const obj=(LIB.objects||[]).find(o=>o.id===row.id);if(!obj)return '';return `<div class="archrow"><div><b>${esc(obj.name||obj.addr||'Без названия')}</b><div class="muted">${esc(obj.addr||'')} ${esc(obj.client||'')} · объект</div></div><b>${money(objectSum(obj))}</b><button type="button" class="sec" onclick="restoreObj('${obj.id}')">Вернуть</button></div>`}const obj=(LIB.objects||[]).find(o=>o.id===row.objectId);const est=obj&&(obj.estimates||[]).find(e=>e.id===row.id);if(!obj||!est)return '';return `<div class="archrow"><div><b>Смета № ${esc((est.estimate&&est.estimate.num)||'')}</b><div class="muted">${esc(obj.name||'Объект')} · смета</div></div><b>${money(estSum(est.estimate))}</b><button type="button" class="sec" onclick="restoreEst('${obj.id}','${est.id}')">Вернуть</button></div>`};const url=localStorage.getItem('smeta_v1_server_url')||'';const logged=!!token();const body=libMode==='archive'?(archived.map(archRow).join('')||'<p class="muted">Архив пуст.</p>'):(work.map(row=>card(row.id)).join('')||'<p class="muted">Рабочих объектов нет.</p>');box.innerHTML=`<div class="card"><h2 style="margin-top:0">Объекты и сметы</h2><p class="muted">Список только на этом устройстве, не в облаке. Архив не удаляет записи.</p><div class="libmode"><button type="button" class="${libMode==='work'?'':'sec'}" onclick="setLibMode('work')">Рабочие</button><button type="button" class="${libMode==='archive'?'':'sec'}" onclick="setLibMode('archive')">Архив${archived.length?' ('+archived.length+')':''}</button></div><div class="libtop"><label class="libsearch">Поиск<input id="libQ" value="${esc(q)}" oninput="renderLib(1)" aria-label="Поиск"></label><span><button type="button" onclick="newObject()">Новый объект</button> <button type="button" class="sec" onclick="exportAll()">Скачать все объекты</button> <button type="button" class="sec" onclick="hideLib()">К открытой смете</button></span></div>${(saveState.warnings||[]).map(w=>`<div class="anote">${esc(w)}</div>`).join('')}${saveState.heldRaw?'<p><button type="button" onclick="downloadHeld()">Скачать повреждённую запись</button></p>':''}${body}<details style="margin-top:12px"><summary>Подключение сервера</summary><p class="muted">Домашний сервер необязателен. Пока он не включён, смета хранится только здесь.</p><div class="grid"><label>Адрес сервера<input id="srvUrl" value="${esc(url)}" placeholder="https://сервер:8787"></label>${logged?'<label>Сессия<span class="muted">вход выполнен</span></label>':'<label>Логин<input id="srvUser" autocomplete="username"></label><label>Пароль<input id="srvPass" type="password" autocomplete="current-password"></label>'}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button type="button" onclick="saveServerUrl(document.getElementById(\'srvUrl\').value)">Запомнить адрес</button>${logged?'<button type="button" class="sec" onclick="logoutServer()">Выйти</button><button type="button" class="sec" onclick="flushSync()">Отправить сейчас</button>':'<button type="button" onclick="loginServer()">Войти</button>'}</div></details></div>`;if(refocus){const el=document.getElementById('libQ');if(el)el.focus()}}
+function renderMeasure(){const host=document.getElementById('measure');if(!host)return;if(S.tab!=='p'){host.innerHTML='';return}const row=(r,i)=>{const g=r.noDims?null:geo(r);const inp=(k,ph)=>`<input class="rin" data-r="${i}" data-k="${k}" value="${esc(r[k]??'')}" placeholder="${ph||''}">`;return `<tr><td><input class="rin" data-r="${i}" data-k="name" value="${esc(r.name)}" style="width:180px"></td>${r.noDims?'<td colspan="5" class="muted">без размеров</td>':`<td>${inp('L')}</td><td>${inp('W')}</td><td>${inp('H')}</td><td>${inp('open')}</td><td>${inp('slopes')}</td>`}<td class="num">${g?g.perim:'—'}</td><td class="num">${g?g.walls:'—'}</td><td class="num">${g?g.floor:'—'}</td><td><button type="button" class="sec" onclick="copyRoom(${i})">Копия</button> <button type="button" class="del" onclick="if(confirm('Удалить помещение?')){S.rooms.splice(${i},1);S.tab='p';save();render()}">Удалить</button></td></tr>`};const empty=!(S.rooms||[]).length;host.innerHTML=`<div class="card"><h3 style="margin-top:0">Помещения и размеры</h3>${empty?'<p class="muted">Помещений пока нет.</p>':''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><button type="button" onclick="addRoom()">+ Комната</button></div>${empty?'':`<div style="overflow-x:auto"><table class="measure"><tr><th>Помещение</th><th>Длина L</th><th>Ширина B</th><th>Высота H</th><th>Проёмы X, м²</th><th>Откосы, м/п</th><th title="P = 2×(L+B)">Периметр P</th><th title="W = P×H − проёмы">Стены W</th><th title="S = L×B, если площадь не введена вручную">Полы S</th><th></th></tr>${(S.rooms||[]).map(row).join('')}</table></div>`}</div>`;host.querySelectorAll('.rin').forEach(e=>{e.onchange=()=>setR(+e.dataset.r,e.dataset.k,e.value)})}
+function rowMenu(html){return `<details class="rowmenu" onclick="event.stopPropagation()"><summary aria-label="Действия">⋯</summary><div class="more-menu">${html}</div></details>`}
+function openEstFromRow(ev,oid,eid){if(ev.target.closest('button,a,input,select,textarea,details,label'))return;openEst(oid,eid)}
+function renderServer(){const box=document.getElementById('serverBox');if(!box)return;const url=localStorage.getItem('smeta_v1_server_url')||'';const logged=!!token();box.innerHTML=`<p class="muted">Домашний сервер необязателен. Пока он не включён, смета хранится только на этом устройстве. Это не облако.</p><div class="grid"><label>Адрес сервера<input id="srvUrl" value="${esc(url)}" placeholder="https://сервер:8787"></label>${logged?'<label>Сессия<span class="muted">вход выполнен</span></label>':'<label>Логин<input id="srvUser" autocomplete="username"></label><label>Пароль<input id="srvPass" type="password" autocomplete="current-password"></label>'}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button type="button" class="sec" onclick="saveServerUrl(document.getElementById('srvUrl').value)">Запомнить адрес</button>${logged?'<button type="button" class="sec" onclick="logoutServer()">Выйти</button><button type="button" class="sec" onclick="flushSync()">Отправить сейчас</button>':'<button type="button" onclick="loginServer()">Войти</button>'}</div>`}
+function renderLib(refocus){const box=document.getElementById('libView');if(!box)return;const q=(document.getElementById('libQ')||{}).value||'';const items=SmetaLib.queryObjects(LIB.objects||[],q);const work=SmetaLib.workList(items);const archived=SmetaLib.archiveList(items);const estRow=(obj,e)=>{const title='Смета № '+((e.estimate&&e.estimate.num)||'');const on=obj.id===LIB.activeObjectId&&e.id===LIB.activeEstimateId;const conflict=e.syncConflict?' <span class="badge">конфликт</span>':'';return `<div class="libest" onclick="openEstFromRow(event,'${obj.id}','${e.id}')"><div><b>${esc(title)}</b>${on?' <span class="badge">открыта</span>':''}${conflict}<div class="muted">${esc(screenDate(e.estimate&&e.estimate.date))} · ${money(estSum(e.estimate))}${e.dirty&&!e.syncConflict&&serverUrl()?' · ждёт отправки':''}</div></div><div class="estsacts">${rowMenu(`<button type="button" onclick="duplicateEst('${obj.id}','${e.id}')">Дублировать</button><button type="button" onclick="archiveEst('${obj.id}','${e.id}')">В архив</button>`)}${e.syncConflict?`<button type="button" onclick="keepEst('${obj.id}','${e.id}')">Оставить мою копией</button>${e.conflictServer&&!e.conflictServer.missing?`<button type="button" class="sec" onclick="takeEst('${obj.id}','${e.id}')">Принять серверную</button>`:''}`:''}</div></div>`};const card=id=>{const obj=(LIB.objects||[]).find(o=>o.id===id);if(!obj)return '';const live=(obj.estimates||[]).filter(e=>!e.archived);const on=obj.id===LIB.activeObjectId;const conflict=obj.syncConflict?`<div class="aerr">Конфликт карточки. Ваши поля не затёрты.${obj.conflictServer&&!obj.conflictServer.missing?' На сервере: '+esc(obj.conflictServer.name||'')+' / '+esc(obj.conflictServer.client||'')+'.':''} <button type="button" onclick="keepObj('${obj.id}')">Оставить мою копией</button> ${obj.conflictServer&&!obj.conflictServer.missing?`<button type="button" class="sec" onclick="takeObj('${obj.id}')">Принять серверную</button>`:''}</div>`:'';return `<article class="libcard"><div class="libhead"><div><h3>${esc(obj.name||obj.addr||'Без названия')}${on?' <span class="badge">открыт</span>':''}</h3><div class="muted">${esc(obj.addr||'адрес не указан')} · ${esc(obj.client||'заказчик не указан')}</div></div><b class="libsum">${money(objectSum(obj))}</b></div>${conflict}<div class="libacts"><button type="button" class="sec" onclick="addEst('${obj.id}')">Новая смета</button>${rowMenu(`<button type="button" onclick="duplicateObj('${obj.id}')">Дублировать</button><button type="button" onclick="archiveObj('${obj.id}')">В архив</button>`)}</div><details><summary>Править карточку</summary><div class="grid" style="margin-top:8px"><label>Название<input value="${esc(obj.name)}" oninput="patchObj('${obj.id}','name',this.value)"></label><label>Адрес<input value="${esc(obj.addr)}" oninput="patchObj('${obj.id}','addr',this.value)"></label><label>Заказчик<input value="${esc(obj.client)}" oninput="patchObj('${obj.id}','client',this.value)"></label><label>Телефон<input value="${esc(obj.phone)}" oninput="patchObj('${obj.id}','phone',this.value)"></label><label>Почта<input value="${esc(obj.email)}" oninput="patchObj('${obj.id}','email',this.value)"></label><label>Заметка<input value="${esc(obj.note)}" oninput="patchObj('${obj.id}','note',this.value)"></label></div></details>${live.map(e=>estRow(obj,e)).join('')||'<p class="muted" style="padding:0 12px 10px">Нет рабочих смет.</p>'}</article>`};const archRow=row=>{if(row.type==='object'){const obj=(LIB.objects||[]).find(o=>o.id===row.id);if(!obj)return '';return `<div class="archrow"><div><b>${esc(obj.name||obj.addr||'Без названия')}</b><div class="muted">${esc(obj.addr||'')} ${esc(obj.client||'')} · объект</div></div><b>${money(objectSum(obj))}</b><button type="button" class="sec" onclick="restoreObj('${obj.id}')">Вернуть</button></div>`}const obj=(LIB.objects||[]).find(o=>o.id===row.objectId);const est=obj&&(obj.estimates||[]).find(e=>e.id===row.id);if(!obj||!est)return '';return `<div class="archrow"><div><b>Смета № ${esc((est.estimate&&est.estimate.num)||'')}</b><div class="muted">${esc(obj.name||'Объект')} · смета</div></div><b>${money(estSum(est.estimate))}</b><button type="button" class="sec" onclick="restoreEst('${obj.id}','${est.id}')">Вернуть</button></div>`};const body=libMode==='archive'?(archived.map(archRow).join('')||'<p class="muted">Архив пуст.</p>'):(work.map(row=>card(row.id)).join('')||'<p class="muted">Рабочих объектов нет.</p>');box.innerHTML=`<div class="card"><h2 style="margin-top:0">Объекты и сметы</h2><div class="libmode"><button type="button" class="${libMode==='work'?'on':''}" onclick="setLibMode('work')">Рабочие</button><button type="button" class="${libMode==='archive'?'on':''}" onclick="setLibMode('archive')">Архив${archived.length?' ('+archived.length+')':''}</button></div><div class="libtop"><label class="libsearch">Поиск<input id="libQ" value="${esc(q)}" oninput="renderLib(1)" aria-label="Поиск"></label><button type="button" onclick="newObject()">+ Объект</button></div>${(saveState.warnings||[]).map(w=>`<div class="anote">${esc(w)}</div>`).join('')}${saveState.heldRaw?'<p><button type="button" onclick="downloadHeld()">Скачать повреждённую запись</button></p>':''}${body}</div>`;if(refocus){const el=document.getElementById('libQ');if(el)el.focus()}}
 function openEst(oid,eid){const est=SmetaLib.activateEstimate(LIB,oid,eid);if(!est)return;adopt(est);hideLib()}
 function addEst(id){if(saveState.readOnly){alert(saveState.msg||'Запись остановлена');return}SmetaLib.capture(LIB,S);const item=SmetaLib.addEstimate(LIB,id,blank());if(!item)return;adopt(item.estimate);hideLib()}
 function duplicateObj(id){SmetaLib.capture(LIB,S);const item=SmetaLib.duplicateObject(LIB,id);if(!item)return;save();renderLib()}
@@ -528,8 +575,7 @@ function _render(){
  if(S.tab===undefined)S.tab='p';
  if(typeof S.tab==='number'&&(S.tab<0||S.tab>=S.rooms.length))S.tab='p';
  const tabs=[['p','Параметры замера']].concat(S.rooms.map((r,i)=>[i,r.name,money(roomTot(r).t)])).concat([['s','Сводная',money(objBase())],['pr','Прайс']]);
- document.getElementById('tabs').innerHTML=tabs.map(([id,name,sum])=>{const arg=typeof id==='number'?id:`'${id}'`;return `<button class="${S.tab===id?'on':''}" onclick="goTab(${arg})">${esc(name)}${sum?`<span class="sm">${sum}</span>`:''}</button>`}).join('')+
-  `<button class="add" onclick="addRoom()">+ Добавить комнату</button>`;
+ document.getElementById('tabs').innerHTML=tabs.map(([id,name,sum])=>{const arg=typeof id==='number'?id:`'${id}'`;const showSum=typeof id==='number'||id==='s';return `<button class="${S.tab===id?'on':''}" onclick="goTab(${arg})">${esc(name)}${showSum&&sum?`<span class="sm">${sum}</span>`:''}</button>`}).join('');
  const po=document.getElementById('panel-obj'),ps=document.getElementById('summary'),ar=document.getElementById('addrow'),pp=document.getElementById('panel-price'),assist=document.getElementById('assist');
  if(po)po.style.display=S.tab==='p'?'':'none';
  if(ps)ps.style.display=S.tab==='s'?'':'none';
@@ -537,8 +583,8 @@ function _render(){
  if(pp)pp.style.display=S.tab==='pr'?'':'none';
  if(assist)assist.style.display=(S.tab==='s'||S.tab==='pr')?'none':'';
  const q=(document.getElementById('q')||{}).value||'';
- if(S.tab==='pr'){document.getElementById('rooms').innerHTML='';document.getElementById('dims').innerHTML='Прейскурант работ — приложение №2 к договору';renderPrice();return}
- if(typeof S.tab!=='number'){document.getElementById('rooms').innerHTML='';document.getElementById('dims').innerHTML=S.tab==='s'?'Сводная по всем помещениям':(S.rooms.length?'Размеры помещений — в таблице. Работы отмечаются на вкладке помещения.':'Добавьте помещения в таблице и введите длину, ширину и высоту.');renderMeasure();renderTotals();return}
+ if(S.tab==='pr'){document.getElementById('rooms').innerHTML='';document.getElementById('dims').innerHTML='';renderPrice();return}
+ if(typeof S.tab!=='number'){document.getElementById('rooms').innerHTML='';document.getElementById('dims').innerHTML='';renderMeasure();renderTotals();return}
  const ri=S.tab,r=S.rooms[ri],g=geo(r);
  const dimIn=(k,l,ph)=>`<label>${l}<input type="text" inputmode="decimal" value="${esc(r[k]??'')}" placeholder="${ph||''}" data-r="${ri}" data-k="${k}" class="rin${r.bad&&r.bad[k]?' bad':''}"></label>`;
  document.getElementById('dims').innerHTML=r.noDims?'<span class="dimnote">Без размеров — количество пишется в строках работ</span>':
@@ -548,7 +594,7 @@ function _render(){
    <div>${on&&ci<0?`<input class="win nm" value="${esc(w.name)}" data-r="${ri}" data-w="${wi}" data-k="name">`:esc(label)}</div>
    ${on?`<div class="ed"><input type="text" inputmode="decimal" value="${esc(w.price)}" placeholder="цена?" data-r="${ri}" data-w="${wi}" data-k="price" class="win"><span>р.</span>
    <input type="text" inputmode="decimal" value="${esc(w.qty)}" data-r="${ri}" data-w="${wi}" data-k="qty" class="win"> <span>${esc(w.unit)}${w.auto?' · авто':''}</span>
-   <b id="ls${ri}_${wi}">${money(lineSum(w))}</b></div>`:`<div class="muted">${catP(ci)==null?'цена вручную':Number(catP(ci)).toLocaleString('ru-RU')+' р. / '+CAT[ci][3]}</div>`}</div>`};
+   <b id="ls${ri}_${wi}">${money(lineSum(w))}</b></div>`:`<div class="muted">${catP(ci)==null?'цена вручную':money(catP(ci))+' / '+CAT[ci][3]}</div>`}</div>`};
  r.openS=r.openS||{};
  const secs=SECTIONS.map(sec=>{let n=0,sum=0;const by={};
   const used=new Set();
@@ -588,8 +634,8 @@ function renderTotals(){const d=disc();S.rooms.forEach((r,ri)=>{const t=roomTot(
  <tr class="tot"><td>Итого</td><td class="num">${T.fa}</td><td></td><td class="num" id="sum_g">${money(T.g)}</td><td class="num" id="sum_s">${money(T.s)}</td><td class="num" id="sum_t">${money(T.t)}</td></tr></table>
  <div class="svod-cards">${rows.map(x=>`<div class="svod-card"><h4>${esc(x.name)}</h4><div class="row"><span>Пол, м²</span><b>${x.floor}</b></div><div class="row"><span>Стены, м²</span><b>${x.walls}</b></div><div class="row"><span>Общестрой</span><b>${x.g}</b></div><div class="row"><span>Спецмонтаж</span><b>${x.s}</b></div><div class="row"><span>Итого</span><b>${x.t}</b></div></div>`).join('')}
  <div class="svod-card"><h4>Итого</h4><div class="row"><span>Пол, м²</span><b>${T.fa}</b></div><div class="row"><span>Общестрой</span><b>${money(T.g)}</b></div><div class="row"><span>Спецмонтаж</span><b>${money(T.s)}</b></div><div class="row"><span>Итого</span><b>${money(T.t)}</b></div></div></div>
- <div class="stats big"><span>${dLab}</span><span class="tot">Итого со скидкой: <span id="sum_td">${money(T.td)}</span></span>
- <span>В т.ч. НДС 5%: ${fmtVat(T.td)}</span>${area?`<span>За м²: ${money(T.td/area)}</span>`:''}</div>`}
+ ${d?`<span class="disc-line">${dLab}</span>`:''}<div class="grand"><span>Итого со скидкой</span><b id="sum_td">${money(T.td)}</b></div>
+ <p class="muted">В т.ч. НДС 5%: ${fmtVat(T.td)}${area?` · За м²: ${money(T.td/area)}`:''}</p>`}
 let smKeys=null;
 function showMarked(){const r=typeof S.tab==='number'?S.rooms[S.tab]:null;smKeys=SmetaCalc.smKeysFromWorks(r&&r.works);render()}
 function showAll(){smKeys=null;render()}
@@ -756,7 +802,7 @@ function editablePrice(){if(!Array.isArray(S.price))S.price=JSON.parse(JSON.stri
 function renderPrice(){const list=getPrice();const q=(document.getElementById('pq')||{}).value||'';
  const by={};list.forEach((it,i)=>{(by[it.s]=by[it.s]||[]).push([it,i])});
  let html=`<div class="card"><h3 style="margin-top:0">Прайс (приложение №2)</h3>
-  <p class="muted">По умолчанию загружен прейскурант из образца договора. Можно править цены и позиции, выгрузить в JSON или CSV.</p>
+  <p class="muted">Цены в каталоге взяты из образцов смет Remfy (14.10.2026 и 17.10.2026). Позиции без цены нужно заполнить вручную. Можно править цены и выгрузить JSON или CSV.</p>
   <label style="flex-direction:row;align-items:center;gap:8px;margin:8px 0"><input type="checkbox" id="usePL" ${S.usePriceList?'checked':''} style="width:22px;height:22px" onchange="toggleUsePrice(this.checked)">Подставить цены прайса в справочник сметы</label>
   <div class="price-tools">
    <button class="sec" type="button" onclick="exportPrice('json')">Экспорт JSON</button>
@@ -970,12 +1016,12 @@ function closePdf(){pdfDraft=null;const box=document.getElementById('pdfBox');if
 function renderPdf(){const box=document.getElementById('pdfBox');const msg=document.getElementById('pdfMsg');const host=document.getElementById('pdfRows');if(!box||!host)return;box.hidden=false;const rows=pdfDraft&&pdfDraft.rows||[];const warns=(pdfDraft&&pdfDraft.warnings||[]).map(w=>esc(w)).join(' ');if(msg)msg.textContent='Сборка '+BUILD+'. Файл читается только в этом браузере и никуда не отправляется. Несопоставленные строки не отмечаются сами. Итоги, шапка и сводная в позиции не попадают.'+(warns?(' '+warns):'');host.innerHTML=rows.length?`<table><tr><th></th><th>Помещение</th><th>Позиция</th><th>Кол-во</th><th>Цена</th><th>Каталог</th></tr>${rows.map((r,i)=>`<tr><td><input type="checkbox" ${r.include?'checked':''} onchange="pdfEdit(${i},'include',this.checked)"></td><td><input value="${esc(r.room)}" oninput="pdfEdit(${i},'room',this.value)"></td><td><input value="${esc(r.name)}" oninput="pdfEdit(${i},'name',this.value)" onchange="renderPdf()"></td><td><input value="${esc(r.qty)}" oninput="pdfEdit(${i},'qty',this.value)" style="width:70px"></td><td><input value="${esc(r.price)}" oninput="pdfEdit(${i},'price',this.value)" style="width:80px"></td><td>${r.confident&&r.useCatalog?'<span class="aok">каталог</span>':`<span class="aerr">не сопоставлено</span>`}${r.catalog?` <label class="ck"><input type="checkbox" ${r.useCatalog?'checked':''} onchange="pdfEdit(${i},'useCatalog',this.checked)"> взять «${esc(r.catalog.name)}»</label>`:''}</td></tr>`).join('')}</table>`:'<p class="muted">Позиций пока нет.</p>'}
 function pdfEdit(i,field,value){if(!pdfDraft||!pdfDraft.rows[i])return;const row=pdfDraft.rows[i];if(field==='include'||field==='useCatalog'){row[field]=!!value;if(field==='useCatalog'&&value)row.include=true;renderPdf();return}if(field==='qty'||field==='price'){const n=String(value).trim().replace(/\s/g,'').replace(',','.');row[field]=n===''?null:(/^\d+(\.\d+)?$/.test(n)?Math.round(Number(n)*100)/100:null);return}row[field]=String(value);if(field==='name'){const found=SmetaPdf.matchCatalog(row.name,row.unit,pdfCatalog());row.catalog=found.item;row.confident=found.confident;row.score=found.score;if(!found.confident)row.useCatalog=false}}
 function openPdfDraft(parsed){pdfDraft=parsed||{rows:[],warnings:[]};renderPdf()}
-const BUILD='20261110j';
+const BUILD='20261110k';
 async function readPdfPages(data){let pdfjs;try{pdfjs=await import('./vendor/pdfjs/pdf.min.mjs?v='+BUILD)}catch(e){return {ok:false,code:'missing'}}pdfjs.GlobalWorkerOptions.workerSrc=new URL('vendor/pdfjs/pdf.worker.min.mjs?v='+BUILD,document.baseURI).href;const load=async(disableWorker)=>pdfjs.getDocument({data:data.slice(),disableWorker:!!disableWorker}).promise;let doc;try{doc=await load(false)}catch(e){const name=String(e&&e.name||'');if(name==='PasswordException'||/password/i.test(String(e&&e.message||'')))return {ok:false,code:'password'};try{doc=await load(true)}catch(e2){const name2=String(e2&&e2.name||'');if(name2==='PasswordException'||/password/i.test(String(e2&&e2.message||'')))return {ok:false,code:'password'};return {ok:false,code:'broken'}}}try{const pages=[];let chars=0;const limit=Math.min(doc.numPages,SmetaPdf.MAX_PAGES);for(let i=1;i<=limit;i++){const page=await doc.getPage(i);const content=await page.getTextContent();const items=(content.items||[]).filter(it=>it&&it.str).map(it=>({str:it.str,x:it.transform[4],y:it.transform[5]}));const lines=SmetaPdf.linesFromItems(items);chars+=lines.join('').length;pages.push(lines)}if(chars<15)return {ok:false,code:'empty'};return {ok:true,pages}}catch(e){return {ok:false,code:'broken'}}}
 async function importPdfFile(inp){const file=inp.files&&inp.files[0];inp.value='';if(!file)return;const problem=SmetaPdf.fileProblem(file);if(problem){alert(problem);return}let bytes;try{bytes=new Uint8Array(await file.arrayBuffer())}catch(e){alert(SmetaPdf.explainExtract('broken'));return}const read=await readPdfPages(bytes);if(!read.ok){pdfDraft={rows:[],warnings:[SmetaPdf.explainExtract(read.code)]};renderPdf();return}openPdfDraft(SmetaPdf.parsePages(read.pages,pdfCatalog()))}
 function parsePdfPaste(){const text=(document.getElementById('pdfPaste')||{}).value||'';if(!String(text).trim()){alert('Вставьте текст сметы.');return}const parsed=SmetaPdf.parsePages([text],pdfCatalog());if(!parsed.rows.length){alert('В тексте нет строк вида «название, цена, количество, единица». Шапка и итоги пропускаются.');return}openPdfDraft(parsed)}
 function applyPdf(mode){if(!pdfDraft)return;const rooms=SmetaPdf.roomsFromRows(pdfDraft.rows);if(!rooms.length){alert('Отметьте хотя бы одну строку. Несопоставленные сами не добавляются.');return}if(mode==='replace'){if(!SmetaLib.activePair(LIB)){alert('Нет открытой сметы.');return}if(!confirm('Заменить помещения открытой сметы черновиком? Другие сметы этого объекта не изменятся.'))return;S.rooms=rooms;save();render();closePdf();return}SmetaLib.capture(LIB,S);const fresh=blank();fresh.rooms=rooms;fresh.objectName=S.objectName||'';fresh.addr=S.addr||'';fresh.client=S.client||'';const item=SmetaLib.addEstimate(LIB,LIB.activeObjectId,fresh);if(!item)return;adopt(item.estimate);closePdf()}
-load();bindObj();bindK();render();paintSave();
+load();bindObj();bindK();render();renderServer();paintSave();
 setInterval(()=>{if(serverUrl()&&token())flushSync()},20000);
 if(serverUrl()&&token())flushSync();
 </script></body></html>
