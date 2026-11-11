@@ -94,3 +94,37 @@ test('пустой черновик заменяется снимком серв
   assert.equal(Sync.statusOf(dirty, { serverConfigured: false, loggedIn: false }).level, 'device');
   assert.equal(Sync.statusOf(dirty, { serverConfigured: true, loggedIn: true, transportError: 'сервер не отвечает' }).level, 'pending');
 });
+
+test('снимок из одних архивных объектов не возвращает их в работу и не создаёт пустышку', () => {
+  const archived = {
+    id: 'obj1', rev: 3, name: 'Дом', addr: 'Лесная, 4', client: 'Анна', phone: '', email: '', note: '', archived: true,
+    estimates: [{ id: 'est1', rev: 3, archived: false, body: { objectName: 'Дом', addr: 'Лесная, 4', client: 'Анна', num: '7', date: '2026-11-09', disc: 0, rooms: [{ name: 'Комната', works: [] }], usePriceList: false } }]
+  };
+  const fresh = libWith(object({ id: 'draft', rev: 0, dirty: false, name: '', addr: '', client: '', phone: '', email: '', note: '' }));
+  fresh.objects[0].estimates[0].rev = 0;
+  fresh.objects[0].estimates[0].estimate = { objectName: '', addr: '', client: '', num: '1', date: '2026-11-09', disc: 0, rooms: [], usePriceList: false };
+  const actions = Sync.plan(fresh, { objects: [archived] });
+  assert.equal(actions[0].op, 'replace-all');
+  Sync.applyActions(fresh, actions);
+  assert.equal(fresh.objects.length, 1);
+  assert.equal(fresh.objects[0].id, 'obj1');
+  assert.equal(fresh.objects[0].archived, true);
+  assert.equal(fresh.objects[0].name, 'Дом');
+  assert.equal(fresh.objects[0].estimates.length, 1);
+  assert.equal(fresh.activeObjectId, '');
+  assert.equal(fresh.activeEstimateId, '');
+
+  const mixed = libWith(object({ id: 'keep', name: 'Живой' }));
+  const snap = { objects: [archived, { id: 'keep', rev: 4, name: 'Живой', addr: 'Адрес', client: 'Анна', phone: '', email: '', note: '', archived: false, estimates: [{ id: 'est1', rev: 4, archived: false, body: { objectName: 'Живой', addr: 'Адрес', client: 'Анна', num: '1', date: '2026-11-09', disc: 0, rooms: [], usePriceList: false } }] }] };
+  Sync.applyActions(mixed, [{ op: 'replace-all', snapshot: snap }]);
+  assert.equal(mixed.activeObjectId, 'keep');
+  assert.equal(mixed.objects.find(o => o.id === 'obj1').archived, true);
+
+  const local = libWith(object({ id: 'obj1', name: 'Дом', archived: true, dirty: true, rev: 2 }));
+  local.activeObjectId = '';
+  local.activeEstimateId = '';
+  const pending = Sync.plan(local, { objects: [{ id: 'obj1', rev: 2, name: 'Дом', addr: 'Адрес', client: 'Анна', phone: '', email: '', note: '', archived: false, estimates: [] }] });
+  assert.ok(pending.some(a => a.op === 'put-object' && a.id === 'obj1'));
+  assert.equal(Sync.pushBodyObject(local.objects[0]).archived, true);
+  assert.equal(local.objects.some(o => !(o.name || '').trim()), false);
+});

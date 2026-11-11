@@ -53,7 +53,7 @@ try {
   });
   ok('у поиска подпись снаружи поля', searchLabel.text === 'Поиск' && searchLabel.placeholder === '', JSON.stringify(searchLabel));
   const serverClosed = await page.evaluate(() => {
-    const det = [...document.querySelectorAll('#libView details')].find(d => (d.querySelector('summary') || {}).textContent.includes('Подключение сервера'));
+    const det = [...document.querySelectorAll('details')].find(d => (d.querySelector('summary') || {}).textContent.includes('Подключение сервера'));
     const url = document.getElementById('srvUrl');
     const display = url ? getComputedStyle(url).display : '';
     const box = url ? url.getBoundingClientRect() : { height: -1 };
@@ -145,7 +145,7 @@ try {
     const g = geo(S.rooms[0]);
     return { tab: S.tab, text: cells ? cells.innerText : '', floor: g.floor, perim: g.perim, walls: g.walls };
   });
-  ok('3.43 / 5.53 / 2.64 / X=5.25 дают S=18.97, P=17.92, W=42.06 и вкладка не уходит', geoRow.tab === 'p' && geoRow.floor === 18.97 && geoRow.perim === 17.92 && geoRow.walls === 42.06 && geoRow.text.includes('18.97') && geoRow.text.includes('17.92') && geoRow.text.includes('42.06'), JSON.stringify(geoRow));
+  ok('3.43 / 5.53 / 2.64 / X=5.25 дают S=18.97, P=17.92, W=42.06 и вкладка не уходит', geoRow.tab === 'p' && geoRow.floor === 18.97 && geoRow.perim === 17.92 && geoRow.walls === 42.06 && geoRow.text.includes('18,97') && geoRow.text.includes('17,92') && geoRow.text.includes('42,06'), JSON.stringify(geoRow));
   await page.screenshot({ path: path.join(outDir, 'measure.png'), fullPage: true });
 
   await page.evaluate(() => { S.tab = 's'; render(); });
@@ -154,7 +154,7 @@ try {
     text: document.getElementById('summary').innerText,
     tabs: document.getElementById('tabs').innerText
   }));
-  ok('сводная оставляет вкладки и показывает стоимости помещений', summary.tab === 's' && summary.tabs.includes('Параметры замера') && summary.tabs.includes('Комната') && summary.text.includes('18.97') && summary.text.includes('Итого'), summary.text.slice(0, 240));
+  ok('сводная оставляет вкладки и показывает стоимости помещений', summary.tab === 's' && summary.tabs.includes('Параметры замера') && summary.tabs.includes('Комната') && summary.text.includes('18,97') && summary.text.includes('Итого'), summary.text.slice(0, 240));
   await page.screenshot({ path: path.join(outDir, 'summary.png'), fullPage: true });
 
   await page.setViewport({ width: 390, height: 844 });

@@ -34,3 +34,29 @@ test('прайс М0912 совпадает с разобранным PDF по ч
   const iso = price.find(item => item.n === '0.1');
   assert.equal(iso.p, 760);
 });
+
+test('каталог комнаты — все 744 позиции прайса, с номером, единицей и ценой', () => {
+  const fs = require('fs');
+  const vm = require('vm');
+  const html = fs.readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
+  const ctx = {};
+  vm.createContext(ctx);
+  vm.runInContext(html.slice(html.indexOf('const PRICE_DEF='), html.indexOf('const SECTIONS=')) + '\nthis.CAT=CAT;', ctx);
+  assert.equal(ctx.CAT.length, 744);
+  const iso = ctx.CAT.find(row => row[6] === '0.1');
+  assert.equal(iso[2].startsWith('Устройство тепло/звукоизоляции'), true);
+  assert.equal(iso[3], 'м2');
+  assert.equal(iso[4], 760);
+  assert.equal(iso[5], 'walls');
+  const freon = ctx.CAT.find(row => row[6] === '24.4');
+  assert.equal(freon[2], 'Демонтаж фреоновой трассы 1');
+  assert.equal(freon[3], 'шт');
+  assert.equal(freon[4], 226);
+  assert.equal(freon[5], 'manual');
+  const ceiling = ctx.CAT.find(row => row[6] === '1.81');
+  assert.equal(ceiling[1], 'Потолки');
+  assert.equal(ceiling[5], 'ceil');
+  const saved = { sec: 'Малярные работы', name: 'Работа которой нет в прайсе', price: 10 };
+  const hit = ctx.CAT.find(row => row[2] === saved.name);
+  assert.equal(hit, undefined);
+});

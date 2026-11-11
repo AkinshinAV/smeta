@@ -266,3 +266,24 @@ test('архив последнего объекта и последней см�
   assert.equal(Lib.workList(lib.objects)[0].estimates.includes(estId), true);
   assert.equal(lib.objects.length, before);
 });
+
+test('архив объекта переживает повторную загрузку и не становится «Без названия»', () => {
+  n = 0;
+  const { lib } = Lib.planLoad({ blank, idFactory: ids, now });
+  lib.objects[0].name = 'Дом';
+  lib.objects[0].addr = 'Лесная, 4';
+  lib.objects[0].estimates[0].estimate = est('Дом', 'Анна', 10);
+  const extra = Lib.addEstimate(lib, lib.objects[0].id, est('Дом', 'Анна', 20), ids, now);
+  Lib.archiveObject(lib, lib.objects[0].id, blank, ids, now);
+  const raw = JSON.stringify(lib);
+  const again = Lib.planLoad({ libRaw: raw, blank, idFactory: ids, now });
+  assert.equal(again.lib.objects.length, 1);
+  assert.equal(again.lib.objects[0].name, 'Дом');
+  assert.equal(again.lib.objects[0].archived, true);
+  assert.equal(again.lib.objects[0].estimates.length, 2);
+  assert.equal(again.lib.objects[0].estimates.some(e => e.id === extra.id), true);
+  assert.equal(Lib.workList(again.lib.objects).length, 0);
+  assert.equal(again.lib.activeObjectId, '');
+  assert.equal(again.lib.activeEstimateId, '');
+  assert.equal(again.lib.objects.some(o => !(o.name || '').trim()), false);
+});

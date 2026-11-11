@@ -70,7 +70,7 @@ try {
   await page.evaluate(() => showLib());
   await page.screenshot({ path: path.join(outDir, 'objects-list.png') });
   const statusText = await page.$eval('#saveState', el => el.textContent);
-  ok('без сервера нет ложной надписи о сохранении на сервере', statusText.includes('этом устройстве') && !statusText.includes('Сохранено на сервере'), statusText);
+  ok('без сервера нет ложной надписи о сохранении на сервере', statusText.includes('Сохранено локально') && !statusText.includes('Сохранено на сервере'), statusText);
   await page.evaluate(() => { const obj = LIB.objects.find(o => o.client === 'Альфа'); openEst(obj.id, obj.estimates[0].id); });
   const backA = await page.evaluate(() => ({ client: S.client, sum: estSum(S), name: S.objectName }));
   ok('возврат к A сохраняет заказчика и сумму', backA.client === 'Альфа' && backA.sum === 200, JSON.stringify(backA));

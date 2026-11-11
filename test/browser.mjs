@@ -55,16 +55,17 @@ try {
     const r = S.rooms[0];
     r.L = '3.43'; r.W = '5.53'; r.H = '2.64'; r.open = '5.25'; r.slopes = '6.5';
     const g = geo(r);
-    r.works.push({ sec: CAT[4][0], surf: CAT[4][1], name: CAT[4][2], unit: CAT[4][3], price: CAT[4][4], base: 'walls', qty: g.walls, auto: true });
+    const paper = CAT.find(x => x[2] === 'Снятие обоев' && x[1] === 'Стены');
+    r.works.push({ sec: paper[0], surf: paper[1], name: paper[2], unit: paper[3], price: paper[4], base: 'walls', qty: g.walls, auto: true });
     r.works.push({ sec: 'Электромонтажные работы', surf: 'Чистовые электромонтажные', name: 'Установка механизмов розеток, выключателей, диммера', unit: 'шт', price: '451,5', qty: '2,5', auto: false });
     save(); render();
   });
   const geoText = await page.$eval('#measure', el => el.innerText);
-  ok('пол 18.97', geoText.includes('18.97'), geoText);
-  ok('стены 42.06', geoText.includes('42.06'), geoText);
-  ok('периметр 17.92', geoText.includes('17.92'), geoText);
+  ok('пол 18.97', geoText.includes('18,97'), geoText);
+  ok('стены 42.06', geoText.includes('42,06'), geoText);
+  ok('периметр 17.92', geoText.includes('17,92'), geoText);
   const strip = await page.evaluate(() => { const back = S.tab; S.tab = 0; render(); const text = document.getElementById('dims').innerText; S.tab = back; render(); return text; });
-  ok('на вкладке комнаты те же размеры', strip.includes('18.97') && strip.includes('42.06') && strip.includes('17.92'), strip);
+  ok('на вкладке комнаты те же размеры', strip.includes('18,97') && strip.includes('42,06') && strip.includes('17,92'), strip);
   const sum = await page.$eval('#sum_td', el => el.textContent);
   ok('скидка не трогает спецмонтаж', sum.includes('4') || true, sum);
   const totals = await page.evaluate(() => {

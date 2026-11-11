@@ -6,12 +6,12 @@ const A = require('../assist.js');
 
 function loadCat() {
   const html = fs.readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
-  const i = html.indexOf('const CAT=[');
-  const j = html.indexOf('const PRICE_DEF');
+  const i = html.indexOf('const PRICE_DEF=');
+  const j = html.indexOf('const SECTIONS=');
   const ctx = {};
   vm.createContext(ctx);
   vm.runInContext(html.slice(i, j) + '\nthis.CAT=CAT;', ctx);
-  return ctx.CAT.map((c, n) => ({ i: n, sec: c[0], surf: c[1], name: c[2], unit: c[3], price: c[4], base: c[5] }));
+  return ctx.CAT.map((c, n) => ({ i: n, sec: c[0], surf: c[1], name: c[2], unit: c[3], price: c[4], base: c[5], n: c[6] }));
 }
 const CAT = loadCat();
 const parse = text => A.parseWorks(text, { catalog: CAT });
@@ -69,20 +69,19 @@ test('несколько помещений, запятая в дроби, си�
   assert.equal(oboi.include, true);
   const alt = parse('Поклеить обои без подбора, постелить ламинат 10 м2, покрасить стены');
   const names = flat(alt).map(p => p.item && p.item.name);
-  assert.ok(names.includes('Оклейка стен обоями на флизелине без подбора'));
+  assert.ok(alt.unknown.some(u => /обои/i.test(u.text)));
   assert.ok(names.includes('Укладка ламината с подложкой'));
   assert.ok(names.includes('Окраска стен в 2 слоя'));
 });
 
 test('не выдумывает цену, количество и лишние работы', () => {
   const res = parse('Кухня, натяжной потолок 9 м2, поставить люстру');
-  const pot = flat(res).find(p => p.item && p.item.name === 'Натяжной потолок');
-  assert.equal(pot.item.price, null);
-  assert.equal(pot.qty, 9);
-  assert.equal(pot.include, true);
-  const lamp = flat(res).find(p => p.item && p.item.name === 'Установка люстры (без сборки)');
+  assert.ok(res.unknown.some(u => /потолок/i.test(u.text)));
+  assert.equal(flat(res).some(p => p.item && /натяжн/i.test(p.item.name) && p.include), false);
+  const lamp = flat(res).find(p => p.item && /люстр/i.test(p.item.name));
+  assert.equal(lamp.item.name, 'Установка люстры** (без сборки) до 5000,00 руб.');
   assert.equal(lamp.qty, null);
-  assert.equal(flat(res).filter(p => p.include).length, 1);
+  assert.equal(flat(res).filter(p => p.include).length, 0);
   const none = parse('ошкурить стены и сделать красиво');
   assert.equal(flat(none).filter(p => p.include).length, 0);
   assert.ok(none.unknown.length >= 1);
@@ -149,7 +148,7 @@ test('электрику и несколько строк можно набра�
   assert.equal(sock.qty, 10);
   assert.equal(sock.include, true);
   assert.equal(sock.item.price, 451);
-  const sht = el.proposals.find(p => p.item && p.item.name === 'Штробление пеноблока');
+  const sht = el.proposals.find(p => p.item && p.item.name === 'Штробление стен из пеноблока, ПГП под кабель 16-20мм.');
   assert.equal(sht.qty, 12);
   const guest = res.rooms.find(r => r.name === 'Гостиная');
   const names = guest.proposals.map(p => p.item && p.item.name);
